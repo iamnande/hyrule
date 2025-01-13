@@ -8,6 +8,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/iamnande/hyrule/internal/rest"
+	"github.com/iamnande/hyrule/internal/rest/middleware"
 )
 
 type Params struct {
@@ -20,10 +21,12 @@ type Params struct {
 }
 
 func Build(params Params) (http.Handler, error) {
+	// TODO: default router
 	router := chi.NewRouter()
-	// TODO: router.Use(REQUEST_LOGGER)
+	router.Use(middleware.RequestLogger(params.Logger))
 	// TODO: router.Use(REQUEST_FEATURE_FLAG)
-	// TODO: router.Use(RESPONSE_PANIC_RECOVERY)
+	router.Use(middleware.ResponsePanicRecovery)
+	router.Use(middleware.ResponseLogger)
 	router.Mount(params.HealthAPI.URLPath(), params.HealthAPI.Handler())
 	router.Route("/v1", func(v1 chi.Router) {
 		for _, api := range params.APIs {
