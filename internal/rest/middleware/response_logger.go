@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/iamnande/hyrule/internal/services/logging"
@@ -11,6 +12,7 @@ import (
 
 func ResponseLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 		wrappedWriter := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 		next.ServeHTTP(wrappedWriter, r.WithContext(r.Context()))
 		logger := logging.FromContext(r.Context())
@@ -21,6 +23,7 @@ func ResponseLogger(next http.Handler) http.Handler {
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
 				slog.Int("status_code", wrappedWriter.Status()),
+				slog.String("duration", time.Since(start).String()),
 			)
 			return
 		}
@@ -28,6 +31,7 @@ func ResponseLogger(next http.Handler) http.Handler {
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			slog.Int("status_code", wrappedWriter.Status()),
+			slog.String("duration", time.Since(start).String()),
 		)
 	})
 }
