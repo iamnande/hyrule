@@ -14,6 +14,7 @@ func Run() {
 	opts := []fx.Option{}
 	opts = append(opts, []fx.Option{
 		modules.LoggingModule,
+		modules.TracingModule,
 		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
 			return &fxevent.SlogLogger{Logger: logger}
 		}),
