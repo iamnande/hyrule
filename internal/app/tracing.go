@@ -35,7 +35,6 @@ func StartTracer(params TracerParams) error {
 		EnableTracing:    params.Config.Enabled,
 		TracesSampleRate: params.Config.SampleRate,
 		Dsn:              params.Config.IngestionURL,
-		ServerName:       version.ServiceName,
 		Release:          version.ServiceVersion,
 		Environment:      string(params.Deployment.Environment),
 		Tags: map[string]string{
