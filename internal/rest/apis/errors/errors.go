@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/iamnande/hyrule/internal/rest/apis/validation"
 )
 
@@ -91,6 +92,6 @@ func NewBadRequestError(ctx context.Context, invalidAttributes ...InvalidAttribu
 }
 
 func extractTraceIDFromContext(ctx context.Context) string {
-	// NOTE: this is a placeholder for now
-	return "hyrule:trace:trace-id"
+	span := sentry.SpanFromContext(ctx)
+	return fmt.Sprintf("hyrule:trace:%s", span.TraceID.String())
 }
