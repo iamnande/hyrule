@@ -41,7 +41,7 @@ type BaseError struct {
 	InternalError error `json:"-"`
 }
 
-func (err BaseError) Error() string {
+func (err *BaseError) Error() string {
 	if len(err.InvalidAttributes) > 0 {
 		return fmt.Sprintf("[%s] %+v (%s)",
 			strings.ToUpper(err.Code.String()),
@@ -55,6 +55,10 @@ func (err BaseError) Error() string {
 		err.InternalError,
 		err.OperationID,
 	)
+}
+
+func (err *BaseError) Unwrap() error {
+	return err.InternalError
 }
 
 type InvalidAttribute struct {

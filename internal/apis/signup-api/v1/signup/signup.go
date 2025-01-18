@@ -65,7 +65,6 @@ func (api *API) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: wire up tracing
 	user, err := api.signUpService.Signup(ctx, &signup.SignUpRequest{
 		FirstName: req.FirstName,
 		LastName:  req.LastName,

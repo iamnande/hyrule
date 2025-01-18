@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 
 	"github.com/iamnande/hyrule/internal/models"
@@ -23,7 +24,11 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (service *Service) Signup(_ context.Context, request *SignUpRequest) (*models.User, error) {
+func (service *Service) Signup(ctx context.Context, request *SignUpRequest) (*models.User, error) {
+	trace := sentry.StartSpan(ctx, "service:SignUp")
+	defer trace.Finish()
+	trace.SetTag("request.first_name", request.FirstName)
+	trace.SetTag("request.last_name", request.LastName)
 	return models.MarshalUser(&user.Record{
 		ID:        uuid.Must(uuid.NewV7()),
 		FirstName: request.FirstName,

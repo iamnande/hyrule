@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	apiErrors "github.com/iamnande/hyrule/internal/rest/apis/errors"
 	"github.com/iamnande/hyrule/internal/services/logging"
 )
@@ -36,5 +37,6 @@ func JSON(_ context.Context, res http.ResponseWriter, code int, data any) {
 func JSONError(ctx context.Context, res http.ResponseWriter, err *apiErrors.BaseError) {
 	logger := logging.FromContext(ctx)
 	logger.Error(err.Error())
+	sentry.CaptureException(err)
 	JSON(ctx, res, err.StatusCode, err)
 }
