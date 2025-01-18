@@ -1,4 +1,4 @@
-package services
+package signup
 
 import (
 	"context"
@@ -8,50 +8,50 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/fx"
 
-	"github.com/iamnande/hyrule/internal/domains/admin"
 	"github.com/iamnande/hyrule/internal/models"
 	"github.com/iamnande/hyrule/internal/rest"
+	"github.com/iamnande/hyrule/internal/services/signup"
 )
 
-type AdminDomain interface {
-	CreateService(
+type SignUpService interface {
+	Signup(
 		ctx context.Context,
-		request *admin.CreateServiceRequest,
-	) (*models.Service, error)
+		request *signup.SignUpRequest,
+	) (*models.User, error)
 }
 
 type API struct {
-	logger      *slog.Logger
-	adminDomain AdminDomain
+	logger        *slog.Logger
+	signUpService SignUpService
 }
 
 type Params struct {
 	fx.In
 
-	Logger      *slog.Logger
-	AdminDomain AdminDomain
+	Logger        *slog.Logger
+	SignUpService SignUpService
 }
 
 type Result struct {
 	fx.Out
 
-	APIHandler rest.APIHandler `group:"admin-api:v1:apis"`
+	APIHandler rest.APIHandler `group:"signup-api:v1:apis"`
 }
 
 func Build(params Params) (Result, error) {
 	return Result{
 		APIHandler: &API{
-			adminDomain: params.AdminDomain,
+			signUpService: params.SignUpService,
 		},
 	}, nil
 }
 
 func (api *API) Handler() http.Handler {
 	servicesAPI := chi.NewRouter()
-	servicesAPI.Post("/", api.CreateService)
+	servicesAPI.Post("/", api.SignUp)
 	return servicesAPI
 }
 
 func (api *API) URLPath() string {
-	return "/services"
+	return "/signup"
 }

@@ -16,8 +16,8 @@ type Params struct {
 
 	Logger *slog.Logger
 
-	HealthAPI rest.APIHandler   `name:"admin-api:v1:health"`
-	APIs      []rest.APIHandler `group:"admin-api:v1:apis"`
+	HealthAPI rest.APIHandler   `name:"signup-api:v1:health"`
+	APIs      []rest.APIHandler `group:"signup-api:v1:apis"`
 }
 
 func Build(params Params) (http.Handler, error) {

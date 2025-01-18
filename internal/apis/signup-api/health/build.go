@@ -27,7 +27,7 @@ func (api *API) Handler() http.Handler {
 type Result struct {
 	fx.Out
 
-	API rest.APIHandler `name:"admin-api:v1:health"`
+	API rest.APIHandler `name:"signup-api:v1:health"`
 }
 
 type Params struct {

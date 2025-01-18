@@ -4,7 +4,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var AdminAPIConfigModule = fx.Options(
+var SignUpAPIConfigModule = fx.Options(
 	fx.Provide(LoadDeployment("")),
 	// fx.Provide(LoadDatabase("DATABASE")),
 )
