@@ -1,0 +1,7 @@
+services:
+  hyrule-database:
+    image: amazon/dynamodb-local:1.25.1
+    container_name: hyrule-database
+    command: '-jar DynamoDBLocal.jar -sharedDb -inMemory -port 5432'
+    ports:
+      - '5432:5432'
