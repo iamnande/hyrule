@@ -4,11 +4,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/iamnande/hyrule/internal/rest/router"
 	"go.uber.org/fx"
 
 	"github.com/iamnande/hyrule/internal/rest"
-	"github.com/iamnande/hyrule/internal/rest/middleware"
 )
 
 type Params struct {
@@ -21,18 +20,10 @@ type Params struct {
 }
 
 func Build(params Params) (http.Handler, error) {
-	// TODO: default router
-	router := chi.NewRouter()
-	router.Use(middleware.RequestLogger(params.Logger))
-	router.Use(middleware.RequestTracer)
-	// TODO: router.Use(REQUEST_FEATURE_FLAG)
-	router.Use(middleware.ResponsePanicRecovery)
-	router.Use(middleware.ResponseLogger)
-	router.Mount(params.HealthAPI.URLPath(), params.HealthAPI.Handler())
-	router.Route("/v1", func(v1 chi.Router) {
-		for _, api := range params.APIs {
-			v1.Mount(api.URLPath(), api.Handler())
-		}
-	})
-	return router, nil
+	return router.NewRouter(&router.Config{
+		Logger:      params.Logger,
+		HealthAPI:   params.HealthAPI,
+		APIs:        params.APIs,
+		VersionPath: "/v1",
+	}), nil
 }
