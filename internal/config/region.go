@@ -3,6 +3,10 @@ package config
 type Region string
 
 const (
-	PrimaryRegion   Region = "primary (us-east-2)"
-	SecondaryRegion Region = "secondary (eu-central-1)"
+	PrimaryRegion   Region = "us-east-2"
+	SecondaryRegion Region = "eu-central-1"
 )
+
+func (r Region) String() string {
+	return string(r)
+}
