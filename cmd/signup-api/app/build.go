@@ -1,13 +1,13 @@
 package app
 
 import (
-	"github.com/iamnande/hyrule/internal/services/signup"
 	"go.uber.org/fx"
 
 	healthAPI "github.com/iamnande/hyrule/internal/apis/signup-api/health"
 	v1SignUpAPIRouter "github.com/iamnande/hyrule/internal/apis/signup-api/v1"
 	v1SignUpAPI "github.com/iamnande/hyrule/internal/apis/signup-api/v1/signup"
 	"github.com/iamnande/hyrule/internal/config"
+	"github.com/iamnande/hyrule/internal/services/signup"
 )
 
 func Build() []fx.Option {
