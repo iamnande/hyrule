@@ -7,4 +7,5 @@ import (
 var SignUpAPIConfigModule = fx.Options(
 	fx.Provide(LoadDeployment("")),
 	fx.Provide(LoadTracing("TRACING")),
+	fx.Provide(LoadDatabase("DATABASE")),
 )

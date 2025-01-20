@@ -14,8 +14,8 @@ import (
 type DependencyStatusValue string
 
 const (
-	DependencyStatusUp   DependencyStatusValue = "UP"
-	DependencyStatusDown DependencyStatusValue = "DOWN"
+	DependencyStatusUp   DependencyStatusValue = "up"
+	DependencyStatusDown DependencyStatusValue = "down"
 )
 
 func (status DependencyStatusValue) String() string {
@@ -33,8 +33,8 @@ type dependencyCheck struct {
 type DependencyCheckType string
 
 const (
-	DependencyCheckTypeHard DependencyCheckType = "HARD"
-	DependencyCheckTypeSoft DependencyCheckType = "SOFT"
+	DependencyCheckTypeHard DependencyCheckType = "hard"
+	DependencyCheckTypeSoft DependencyCheckType = "soft"
 )
 
 type DependencyStatus struct {

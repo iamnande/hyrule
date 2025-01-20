@@ -5,12 +5,19 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"go.uber.org/fx"
+
 	"github.com/iamnande/hyrule/internal/config"
 	"github.com/iamnande/hyrule/internal/rest"
 	"github.com/iamnande/hyrule/internal/rest/apis/health"
 	"github.com/iamnande/hyrule/internal/version"
-	"go.uber.org/fx"
 )
+
+type DatabaseClient interface {
+	dynamodb.ScanAPIClient
+}
 
 type API struct {
 	handler http.Handler
@@ -36,12 +43,11 @@ type Params struct {
 	Logger     *slog.Logger
 	Deployment config.Deployment
 
-	// TODO: data layer check
-	// TODO: cache layer check
+	DatabaseClient DatabaseClient
+	DatabaseConfig config.Database
 }
 
 func Build(params Params) (Result, error) {
-	params.Logger.Info("building health API")
 	handler, err := health.NewAPI(
 		health.DefaultHandler, // liveness
 		health.DefaultHandler, // readiness
@@ -55,11 +61,13 @@ func Build(params Params) (Result, error) {
 		}),
 		health.WithHardDependency("database",
 			func(ctx context.Context) error {
-				return nil
-			},
-		),
-		health.WithSoftDependency("cache",
-			func(ctx context.Context) error {
+				if _, err := params.DatabaseClient.Scan(ctx, &dynamodb.ScanInput{
+					TableName: aws.String(params.DatabaseConfig.Name),
+					Limit:     aws.Int32(1),
+				}); err != nil {
+					params.Logger.Error("failed to check database health", slog.Any("error", err))
+					return err
+				}
 				return nil
 			},
 		),
@@ -67,7 +75,6 @@ func Build(params Params) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	params.Logger.Info("built health API")
 	return Result{
 		API: &API{
 			handler: handler,
