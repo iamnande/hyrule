@@ -3,11 +3,13 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -62,6 +64,10 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 			responseController = http.NewResponseController(w)
 			weightedSemaphore  = semaphore.NewWeighted(dependencyCheckCount)
 		)
+		span := sentry.StartSpan(r.Context(), "dependencies:check:all", sentry.WithDescription("check all dependencies"))
+		span.SetData("dependencies.count", len(cfg.dependencyChecks))
+		span.SetData("dependencies.timeout", cfg.timeout.String())
+		defer span.Finish()
 
 		// set the request write deadline to the configured value
 		// we're also going to enforce this deadline with a context
@@ -73,10 +79,12 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 
 		// check all dependencies
 		for _, check := range cfg.dependencyChecks {
+			checkSpan := sentry.StartSpan(span.Context(), fmt.Sprintf("dependencies:check:%s", check.name), sentry.WithDescription(check.name))
 			if err = weightedSemaphore.Acquire(ctx, 1); err != nil {
 				cfg.logger.Error("failed to acquire semaphore", slog.Any("error", err))
 			}
 			go func(ctx context.Context, statusTracker *sync.Map, dependency dependencyCheck) {
+				defer checkSpan.Finish()
 				defer weightedSemaphore.Release(1)
 				status := DependencyStatus{
 					Name:   dependency.name,
@@ -87,6 +95,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 					status.Status = DependencyStatusUp
 				}
 				dependencyChecks.Store(dependency.name, status)
+				checkSpan.SetTag(fmt.Sprintf("dependencies:%s:status", dependency.name), status.Status.String())
 			}(ctx, &dependencyChecks, check)
 		}
 
@@ -110,6 +119,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 		if response.Status == DependencyStatusDown {
 			w.WriteHeader(http.StatusServiceUnavailable)
 		}
+		span.SetTag("dependencies:status", response.Status.String())
 		body, err := json.Marshal(response)
 		if err != nil {
 			cfg.logger.Error("failed to marshal dependency check response", slog.Any("error", err))
