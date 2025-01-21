@@ -5,6 +5,6 @@ type Deployment struct {
 	Environment Environment `env:"ENVIRONMENT,notEmpty"`
 }
 
-func LoadDeployment(prefix string) func() (Deployment, error) {
-	return load[Deployment](prefix)
+func LoadDeployment() func() (Deployment, error) {
+	return load[Deployment]("")
 }

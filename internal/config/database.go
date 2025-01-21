@@ -5,6 +5,6 @@ type Database struct {
 	LocalEndpoint string `env:"LOCAL_ENDPOINT" envDefault:"http://localhost:5432"`
 }
 
-func LoadDatabase(prefix string) func() (Database, error) {
-	return load[Database](prefix)
+func LoadDatabase() func() (Database, error) {
+	return load[Database]("DATABASE")
 }

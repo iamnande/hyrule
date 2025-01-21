@@ -6,6 +6,6 @@ type Tracing struct {
 	IngestionURL string  `env:"INGESTION_URL"`
 }
 
-func LoadTracing(prefix string) func() (Tracing, error) {
-	return load[Tracing](prefix)
+func LoadTracing() func() (Tracing, error) {
+	return load[Tracing]("TRACING")
 }
