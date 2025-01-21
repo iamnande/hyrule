@@ -47,7 +47,7 @@ type Params struct {
 	DatabaseConfig config.Database
 }
 
-func Build(params Params) (Result, error) {
+func NewHealthAPI(params Params) (Result, error) {
 	handler, err := health.NewAPI(
 		health.DefaultHandler, // liveness
 		health.DefaultHandler, // readiness

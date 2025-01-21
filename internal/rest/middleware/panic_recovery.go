@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/getsentry/sentry-go"
+
 	"github.com/iamnande/hyrule/internal/services/logging"
 )
 

@@ -3,11 +3,11 @@ package utils
 import (
 	"net/http"
 
-	modules "github.com/iamnande/hyrule/internal/app"
 	. "github.com/onsi/ginkgo/v2"
-
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
+
+	modules "github.com/iamnande/hyrule/internal/app"
 )
 
 type TestAPI struct {

@@ -25,9 +25,9 @@ func Build() []fx.Option {
 
 		// runtime
 		fx.Provide(
-			healthAPI.Build,
-			v1SignUpAPI.Build,
-			v1SignUpAPIRouter.Build,
+			healthAPI.NewHealthAPI,
+			v1SignUpAPI.NewSignUpAPI,
+			v1SignUpAPIRouter.NewSignUpAPIRouter,
 		),
 	}
 }

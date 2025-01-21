@@ -4,10 +4,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/iamnande/hyrule/internal/rest/router"
 	"go.uber.org/fx"
 
 	"github.com/iamnande/hyrule/internal/rest"
+	"github.com/iamnande/hyrule/internal/rest/router"
 )
 
 type Params struct {
@@ -19,7 +19,7 @@ type Params struct {
 	APIs      []rest.APIHandler `group:"signup-api:v1:apis"`
 }
 
-func Build(params Params) (http.Handler, error) {
+func NewSignUpAPIRouter(params Params) (http.Handler, error) {
 	return router.NewRouter(&router.Config{
 		Logger:      params.Logger,
 		HealthAPI:   params.HealthAPI,

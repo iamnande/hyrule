@@ -8,6 +8,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/iamnande/hyrule/internal/services/logging"
 )
 

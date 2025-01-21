@@ -38,7 +38,7 @@ type Result struct {
 	APIHandler rest.APIHandler `group:"signup-api:v1:apis"`
 }
 
-func Build(params Params) (Result, error) {
+func NewSignUpAPI(params Params) (Result, error) {
 	return Result{
 		APIHandler: &API{
 			signUpService: params.SignUpService,

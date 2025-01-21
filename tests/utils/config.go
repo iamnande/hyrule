@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/iamnande/hyrule/internal/config"
 	"go.uber.org/fx"
+
+	"github.com/iamnande/hyrule/internal/config"
 )
 
 func TestConfigs() []fx.Option {

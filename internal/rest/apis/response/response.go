@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/getsentry/sentry-go"
+
 	apiErrors "github.com/iamnande/hyrule/internal/rest/apis/errors"
 	"github.com/iamnande/hyrule/internal/services/logging"
 )
