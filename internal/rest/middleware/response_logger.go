@@ -51,7 +51,6 @@ func ResponseLogger(next http.Handler) http.Handler {
 		}
 
 		if wrappedWriter.Status() >= 400 {
-
 			logger.Error(message, attributes...)
 			return
 		}
