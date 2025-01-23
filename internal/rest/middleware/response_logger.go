@@ -37,16 +37,22 @@ func ResponseLogger(next http.Handler) http.Handler {
 		// after API
 		message := fmt.Sprintf("%s %s %d", r.Method, r.URL.Path, wrappedWriter.Status())
 		attributes := []any{
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.Int("status_code", wrappedWriter.Status()),
-			slog.String("duration", time.Since(start).String()),
+			slog.Group("request",
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+			),
+			slog.Group("response",
+				slog.Int("status_code", wrappedWriter.Status()),
+				slog.String("duration", time.Since(start).String()),
+			),
 		}
 
 		if span != nil {
 			attributes = append(attributes,
-				slog.String("trace_id", span.TraceID.String()),
-				slog.String("span_id", span.SpanID.String()),
+				slog.Group("tracing",
+					slog.String("trace_id", span.TraceID.String()),
+					slog.String("span_id", span.SpanID.String()),
+				),
 			)
 		}
 
