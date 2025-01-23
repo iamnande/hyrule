@@ -41,6 +41,7 @@ type Result struct {
 func NewSignUpAPI(params Params) (Result, error) {
 	return Result{
 		APIHandler: &API{
+			logger:        params.Logger,
 			signUpService: params.SignUpService,
 		},
 	}, nil
