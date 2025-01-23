@@ -35,7 +35,7 @@ type LoggerResult struct {
 func NewLogger(params LoggerParams) (LoggerResult, error) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	logger = logger.With(
-		slog.Group("runtime",
+		slog.Group("deployment",
 			slog.String("region", string(params.Deployment.Region)),
 			slog.String("environment", string(params.Deployment.Environment)),
 		),
