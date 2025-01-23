@@ -25,7 +25,7 @@ func NewService() *Service {
 }
 
 func (service *Service) Signup(ctx context.Context, request *SignUpRequest) (*models.User, error) {
-	trace := sentry.StartSpan(ctx, "service:SignUp")
+	trace := sentry.StartSpan(ctx, "service:signup:SignUp")
 	defer trace.Finish()
 	trace.SetTag("request.first_name", request.FirstName)
 	trace.SetTag("request.last_name", request.LastName)
