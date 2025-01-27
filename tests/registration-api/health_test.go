@@ -1,4 +1,4 @@
-package signupapi
+package adminapi
 
 import (
 	"net/http"
@@ -16,13 +16,13 @@ var _ = Describe("Health API", Ordered, ContinueOnFailure, func() {
 	var (
 		baseURL       string
 		testAPIServer *httptest.Server
-		signup        utils.TestSignUpAPI
+		signup        utils.TestRegistrationAPI
 	)
 
 	BeforeAll(func() {
 		opts := []fx.Option{}
 		opts = append(opts, utils.TestConfigs()...)
-		signup = utils.NewTestSignUpAPI(opts...)
+		signup = utils.NewTestRegistrationAPI(opts...)
 		testAPIServer = httptest.NewServer(signup.API)
 		baseURL = testAPIServer.URL
 	})

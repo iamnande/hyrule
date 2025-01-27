@@ -12,6 +12,13 @@ import (
 	"github.com/iamnande/hyrule/internal/config"
 )
 
+const (
+	KeySeparator = ":"
+
+	PartitionKeyAttributeName = "PK"
+	SortKeyAttributeName      = "SK"
+)
+
 type Params struct {
 	fx.In
 

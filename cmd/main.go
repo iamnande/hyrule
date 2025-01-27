@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	signupapi "github.com/iamnande/hyrule/cmd/signup-api"
+	registrationapi "github.com/iamnande/hyrule/cmd/registration-api"
 	"github.com/iamnande/hyrule/internal/version"
 )
 
@@ -15,16 +15,16 @@ type serviceCMD = string
 const (
 	defaultEntrypoint = "version"
 
-	cmdSignUpAPI serviceCMD = "signup-api"
-	cmdVersion   serviceCMD = "version"
+	cmdVersion         serviceCMD = "version"
+	cmdRegistrationAPI serviceCMD = "registration-api"
 
 	serviceNameFormat    = "%s-%s"
 	serviceVersionFormat = "%s %s %s"
 )
 
 var availableCMDs = []serviceCMD{
-	cmdSignUpAPI,
 	cmdVersion,
+	cmdRegistrationAPI,
 }
 
 func main() {
@@ -37,9 +37,9 @@ func main() {
 	flag.Parse()
 
 	switch flagCMD {
-	case cmdSignUpAPI:
-		version.ServiceName = fmt.Sprintf(serviceNameFormat, version.ServicePrefix, cmdSignUpAPI)
-		signupapi.Run()
+	case cmdRegistrationAPI:
+		version.ServiceName = fmt.Sprintf(serviceNameFormat, version.ServicePrefix, cmdRegistrationAPI)
+		registrationapi.Run()
 	case cmdVersion:
 		fmt.Printf(serviceVersionFormat, version.ServicePrefix, cmdVersion, version.ServiceVersion)
 	default:

@@ -4,7 +4,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var SignUpAPIConfigModule = fx.Options(
+var RegistrationAPIModule = fx.Options(
 	fx.Provide(LoadDeployment()),
 	fx.Provide(LoadTracing()),
 	fx.Provide(LoadDatabase()),

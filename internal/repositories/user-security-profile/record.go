@@ -1,28 +1,26 @@
-package user
+package usersecurityprofile
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+
 	"github.com/iamnande/hyrule/internal/database"
 	"github.com/iamnande/hyrule/internal/partition"
-	"github.com/segmentio/ksuid"
 )
 
 const (
-	FieldID       = "UserID"
-	FieldEmail    = "UserEmail"
-	FieldFullName = "UserFullName"
+	FieldPassword = "UserSecurityPassword"
+	FieldVerified = "UserSecurityVerified"
 )
 
 type Record struct {
 	PK partition.Partition
 	SK partition.Partition
 
-	ID       ksuid.KSUID
-	Email    string
-	FullName string
+	Password string
+	Verified bool
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -43,14 +41,11 @@ func (record *Record) PrimaryKey() map[string]types.AttributeValue {
 
 func (record *Record) Marshal() map[string]types.AttributeValue {
 	val := record.PrimaryKey()
-	val[FieldID] = &types.AttributeValueMemberS{
-		Value: record.ID.String(),
+	val[FieldPassword] = &types.AttributeValueMemberS{
+		Value: record.Password,
 	}
-	val[FieldEmail] = &types.AttributeValueMemberS{
-		Value: record.Email,
-	}
-	val[FieldFullName] = &types.AttributeValueMemberS{
-		Value: record.FullName,
+	val[FieldVerified] = &types.AttributeValueMemberBOOL{
+		Value: record.Verified,
 	}
 	val[database.FieldCreatedAt] = &types.AttributeValueMemberS{
 		Value: record.CreatedAt.Format(time.RFC3339),
@@ -77,7 +72,6 @@ func Unmarshal(item map[string]types.AttributeValue) (*Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse partition key: %w", err)
 	}
-	record.Email = record.PK.ID
 
 	// SK
 	record.SK, err = database.ParsePartitionField(item, database.FieldSortKey)
@@ -85,30 +79,18 @@ func Unmarshal(item map[string]types.AttributeValue) (*Record, error) {
 		return nil, fmt.Errorf("failed to parse sort key: %w", err)
 	}
 
-	// ID
-	if field, exists := item[database.FieldID].(*types.AttributeValueMemberS); exists {
-		var id ksuid.KSUID
-		id, err = ksuid.Parse(field.Value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse id: %w", err)
-		}
-		record.ID = id
+	// Password
+	if field, exists := item[FieldPassword].(*types.AttributeValueMemberS); exists {
+		record.Password = field.Value
 	} else {
-		return nil, fmt.Errorf("failed to parse id: %v", item[database.FieldID])
+		return nil, fmt.Errorf("failed to parse password: %v", item[FieldPassword])
 	}
 
-	// Email
-	if field, exists := item[FieldEmail].(*types.AttributeValueMemberS); exists {
-		record.Email = field.Value
+	// Verified
+	if field, exists := item[FieldVerified].(*types.AttributeValueMemberBOOL); exists {
+		record.Verified = field.Value
 	} else {
-		return nil, fmt.Errorf("failed to parse email: %v", item[FieldEmail])
-	}
-
-	// FullName
-	if field, exists := item[FieldFullName].(*types.AttributeValueMemberS); exists {
-		record.FullName = field.Value
-	} else {
-		return nil, fmt.Errorf("failed to parse full name: %v", item[FieldFullName])
+		return nil, fmt.Errorf("failed to parse verified: %v", item[FieldVerified])
 	}
 
 	// Timestamps

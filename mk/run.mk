@@ -19,6 +19,6 @@ stack-down: ## run: stop the local environment
 	@echo $(APP_LOG_FMT) "stopping local environment"
 	@podman compose down --remove-orphans --volumes --timeout $(STACK_TIMEOUT)
 
-.PHONY: run-signup-api
-run-signup-api: ## run: Admin API
-	go run -ldflags $(GO_LDFLAGS) $(ENTRYPOINT) -cmd=signup-api
+.PHONY: run-registration-api
+run-registration-api: ## run: Registration API
+	go run -ldflags $(GO_LDFLAGS) $(ENTRYPOINT) -cmd=registration-api

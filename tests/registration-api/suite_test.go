@@ -1,4 +1,4 @@
-package signupapi
+package adminapi
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSignUpAPI(t *testing.T) {
+func TestAdminAPI(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SignUp API Suite")
+	RunSpecs(t, "Admin API Suite")
 }

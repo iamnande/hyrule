@@ -15,11 +15,11 @@ type Params struct {
 
 	Logger *slog.Logger
 
-	HealthAPI rest.APIHandler   `name:"signup-api:v1:health"`
-	APIs      []rest.APIHandler `group:"signup-api:v1:apis"`
+	HealthAPI rest.APIHandler   `name:"registration-api:v1:health"`
+	APIs      []rest.APIHandler `group:"registration-api:v1:apis"`
 }
 
-func NewSignUpAPIRouter(params Params) (http.Handler, error) {
+func NewAdminAPIRouter(params Params) (http.Handler, error) {
 	return router.NewRouter(&router.Config{
 		Logger:      params.Logger,
 		HealthAPI:   params.HealthAPI,

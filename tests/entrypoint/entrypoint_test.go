@@ -8,7 +8,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 
-	signupApp "github.com/iamnande/hyrule/cmd/signup-api/app"
+	registrationAPI "github.com/iamnande/hyrule/cmd/registration-api/app"
 	"github.com/iamnande/hyrule/tests/utils"
 )
 
@@ -32,8 +32,8 @@ var _ = DescribeTable("Entrypoint",
 		Expect(initialized).To(BeTrue())
 	},
 	Entry(
-		"SignUp API",
-		signupApp.Build(),
+		"Registration API",
+		registrationAPI.Build(),
 		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
 	),
 )

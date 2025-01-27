@@ -6,7 +6,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 
-	"github.com/iamnande/hyrule/cmd/signup-api/app"
+	"github.com/iamnande/hyrule/cmd/registration-api/app"
 	modules "github.com/iamnande/hyrule/internal/app"
 )
 

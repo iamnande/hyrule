@@ -1,0 +1,30 @@
+flowchart TD
+    CUSTOMER[fa:fa-user Customer] --> API_REGISTER[[POST /register \n\n apis.v1.registration.RegisterNewUser]]
+
+    subgraph API_SERVER[fa:fa-server Registration API]
+        API_REGISTER --> REGISTRATION_APP
+    end
+
+    subgraph REGISTRATION_APP[fa:fa-mail-bulk Registration App]
+        DOM_REGISTRATION[fa:fa-id-card domains.registration.RegisterNewUser]
+        DOM_REGISTRATION -->|Register New User| SVC_REGISTRATION[fa:fa-id-card services.registration.RegisterNewUser]
+        SVC_REGISTRATION -->|Create| DATABASE
+        SVC_REGISTRATION -->|Create| DATABASE
+        SVC_REGISTRATION -->|Create| DATABASE
+        SVC_REGISTRATION -->|Hash Password| PASSWORD_SERVICE
+        DOM_REGISTRATION -->|Send E-mail Verification Email| EMAIL_SERVER
+    end
+
+    subgraph DATABASE[fa:fa-database Database]
+        REPO_USER[fa:fa-user User]
+        REPO_USER_SECURITY_PROFILE[fa:fa-lock User Security Profile]
+        REPO_USER_BILLING_PROFILE[fa:fa-calculator User Billing Profile]
+    end
+
+    subgraph PASSWORD_SERVICE[fa:fa-lock Password Service]
+        SVC_PASSWORD[fa:fa-lock services.password.HashPassword]
+    end
+
+    subgraph EMAIL_SERVER[fa:fa-envelope Email Server]
+        SVC_EMAIL[fa:fa-envelope services.email.SendEmail]
+    end

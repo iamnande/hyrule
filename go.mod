@@ -15,6 +15,7 @@ require (
 	github.com/imroc/req/v3 v3.49.1
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
+	github.com/segmentio/ksuid v1.0.4
 	go.uber.org/fx v1.23.0
 	golang.org/x/sync v0.10.0
 )
