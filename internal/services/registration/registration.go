@@ -7,12 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/getsentry/sentry-go"
-	"github.com/iamnande/hyrule/internal/repositories/invites"
-	"github.com/segmentio/ksuid"
-
 	"github.com/iamnande/hyrule/internal/models"
-	"github.com/iamnande/hyrule/internal/partition"
 	billingProfile "github.com/iamnande/hyrule/internal/repositories/billing-profile"
+	"github.com/iamnande/hyrule/internal/repositories/invites"
 	securityProfile "github.com/iamnande/hyrule/internal/repositories/security-profile"
 	"github.com/iamnande/hyrule/internal/repositories/user"
 )
@@ -41,13 +38,6 @@ func (service *Service) RegisterNewUser(
 		return nil, err
 	}
 
-	// prep
-	userID := ksuid.New()
-	userPartition := partition.Partition{
-		Category: partition.CategoryUser,
-		ID:       userID.String(),
-	}
-
 	// user
 	userRecord := user.NewUser(user.NewUserParams{
 		Email:    input.Email,
@@ -56,20 +46,20 @@ func (service *Service) RegisterNewUser(
 
 	// security profile
 	securityProfileRecord := securityProfile.NewSecurityProfile(securityProfile.NewSecurityProfileParams{
-		Partition: userPartition,
+		Partition: userRecord.Partition(),
 		Password:  hashedPassword,
 	})
 
 	// billing profile
 	billingProfileRecord := billingProfile.NewBillingProfile(billingProfile.NewBillingProfileParams{
-		Partition: userPartition,
+		Partition: userRecord.Partition(),
 		Plan:      models.BillingPlanConsumption,
 	})
 
 	// invite
 	inviteRecord := invites.NewInvite(invites.NewInviteParams{
-		Partition: userPartition,
-		ExpiresAt: time.Now().UTC().Add(time.Hour * 24), // TODO: make configurable
+		Partition: userRecord.Partition(),
+		ExpiresAt: time.Now().UTC().Add(service.inviteConfig.ValidityWindow),
 	})
 
 	// write all records in a single transaction

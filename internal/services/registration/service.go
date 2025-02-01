@@ -18,9 +18,9 @@ type PasswordService interface {
 }
 
 type Service struct {
-	databaseClient DatabaseClient
-	databaseConfig config.Database
-
+	databaseClient  DatabaseClient
+	databaseConfig  config.Database
+	inviteConfig    config.Invite
 	passwordService PasswordService
 }
 

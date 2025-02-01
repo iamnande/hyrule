@@ -55,6 +55,13 @@ func NewUser(params NewUserParams) *Record {
 	}
 }
 
+func (record *Record) Partition() partition.Partition {
+	return partition.Partition{
+		Category: partition.CategoryUser,
+		ID:       record.ID.String(),
+	}
+}
+
 func (record *Record) PrimaryKey() map[string]types.AttributeValue {
 	key := map[string]types.AttributeValue{
 		database.PartitionKeyAttributeName: &types.AttributeValueMemberS{
