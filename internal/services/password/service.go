@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/fx"
@@ -86,25 +87,21 @@ func (service *Service) encode(salt []byte, hash []byte) string {
 }
 
 func (service *Service) decode(encoded string) ([]byte, []byte, error) {
-	var (
-		err        error
-		version    uint32
-		memory     uint32
-		iterations uint32
-		threads    uint8
-		saltBase64 string
-		hashBase64 string
+	parts := strings.Split(encoded, "$")
+	if len(parts) != 6 || parts[1] != "argon2id" {
+		return nil, nil, ErrInvalidEncodingFormat
+	}
 
-		salt []byte
-		hash []byte
-	)
+	var version uint32
+	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil {
+		return nil, nil, fmt.Errorf("%w: invalid version: %v", ErrInvalidEncodingFormat, err)
+	}
 
-	if _, err = fmt.Sscanf(
-		encoded, EncodingFormat,
-		&version, &memory, &iterations, &threads,
-		&saltBase64, &hashBase64,
-	); err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidEncodingFormat, err)
+	var memory uint32
+	var iterations uint32
+	var threads uint8
+	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &iterations, &threads); err != nil {
+		return nil, nil, fmt.Errorf("%w: invalid parameters: %v", ErrInvalidEncodingFormat, err)
 	}
 
 	if version != argon2.Version ||
@@ -114,14 +111,14 @@ func (service *Service) decode(encoded string) ([]byte, []byte, error) {
 		return nil, nil, ErrInvalidEncodingFormat
 	}
 
-	salt, err = base64.RawStdEncoding.DecodeString(saltBase64)
+	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid salt encoding: %w", err)
 	}
 
-	hash, err = base64.RawStdEncoding.DecodeString(hashBase64)
+	hash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("invalid hash encoding: %w", err)
 	}
 
 	return salt, hash, nil
