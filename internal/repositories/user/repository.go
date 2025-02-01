@@ -1,9 +1,9 @@
 package user
 
 import (
-	"github.com/iamnande/hyrule/internal/config"
 	"go.uber.org/fx"
 
+	"github.com/iamnande/hyrule/internal/config"
 	"github.com/iamnande/hyrule/internal/database"
 )
 

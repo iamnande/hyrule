@@ -34,7 +34,7 @@ func NewBillingProfile(params NewBillingProfileParams) *Record {
 	return &Record{
 		PK: params.Partition,
 		SK: partition.Partition{
-			Category: partition.CategoryUser,
+			Category: partition.CategoryAccount,
 			ID:       "billing-profile",
 		},
 		Plan: models.BillingPlanConsumption,
