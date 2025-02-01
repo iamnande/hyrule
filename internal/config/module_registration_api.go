@@ -9,4 +9,5 @@ var RegistrationAPIModule = fx.Options(
 	fx.Provide(LoadTracing()),
 	fx.Provide(LoadDatabase()),
 	fx.Provide(LoadJWT()),
+	fx.Provide(LoadEmail()),
 )

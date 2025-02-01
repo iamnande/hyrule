@@ -1,4 +1,4 @@
-package usersecurityprofile
+package securityprofile
 
 import (
 	"fmt"
@@ -22,9 +22,28 @@ type Record struct {
 	Password string
 	Verified bool
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+	database.TimestampFields
+}
+
+type NewSecurityProfileParams struct {
+	Partition partition.Partition
+	Password  string
+}
+
+func NewSecurityProfile(params NewSecurityProfileParams) *Record {
+	now := time.Now().UTC()
+	return &Record{
+		PK: params.Partition,
+		SK: partition.Partition{
+			Category: partition.CategoryUser,
+			ID:       "security-profile",
+		},
+		Password: params.Password,
+		TimestampFields: database.TimestampFields{
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
 }
 
 func (record *Record) PrimaryKey() map[string]types.AttributeValue {
@@ -47,17 +66,7 @@ func (record *Record) Marshal() map[string]types.AttributeValue {
 	val[FieldVerified] = &types.AttributeValueMemberBOOL{
 		Value: record.Verified,
 	}
-	val[database.FieldCreatedAt] = &types.AttributeValueMemberS{
-		Value: record.CreatedAt.Format(time.RFC3339),
-	}
-	val[database.FieldUpdatedAt] = &types.AttributeValueMemberS{
-		Value: record.UpdatedAt.Format(time.RFC3339),
-	}
-	if record.DeletedAt != nil {
-		val[database.FieldDeletedAt] = &types.AttributeValueMemberS{
-			Value: record.DeletedAt.Format(time.RFC3339),
-		}
-	}
+	record.TimestampFields.Marshal(val)
 	return val
 }
 
@@ -94,18 +103,11 @@ func Unmarshal(item map[string]types.AttributeValue) (*Record, error) {
 	}
 
 	// Timestamps
-	record.CreatedAt, err = database.ParseTimestampField(item, database.FieldCreatedAt)
+	timestampFields, err := database.ParseTimestampFields(item)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse created at: %w", err)
+		return nil, fmt.Errorf("failed to parse timestamps: %w", err)
 	}
-	record.UpdatedAt, err = database.ParseTimestampField(item, database.FieldUpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse updated at: %w", err)
-	}
-	record.DeletedAt, err = database.ParseNullableTimestampField(item, database.FieldDeletedAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse deleted at: %w", err)
-	}
+	record.TimestampFields = timestampFields
 
 	return record, nil
 }

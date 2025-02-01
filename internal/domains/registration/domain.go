@@ -4,10 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/getsentry/sentry-go"
-	"github.com/iamnande/hyrule/internal/models"
 	"go.uber.org/fx"
 
+	"github.com/iamnande/hyrule/internal/services/notification"
 	"github.com/iamnande/hyrule/internal/services/registration"
 )
 
@@ -18,9 +17,14 @@ type RegistrationService interface {
 	) (*registration.RegisterNewUserOutput, error)
 }
 
+type NotificationService interface {
+	NotifyEmail(ctx context.Context, input *notification.NotifyEmailInput) error
+}
+
 type Domain struct {
 	logger              *slog.Logger
 	registrationService RegistrationService
+	notificationService NotificationService
 }
 
 type Params struct {
@@ -28,42 +32,13 @@ type Params struct {
 
 	Logger              *slog.Logger
 	RegistrationService RegistrationService
+	NotificationService NotificationService
 }
 
 func NewDomain(params Params) *Domain {
 	return &Domain{
 		logger:              params.Logger,
 		registrationService: params.RegistrationService,
+		notificationService: params.NotificationService,
 	}
-}
-
-type RegisterNewUserInput struct {
-	Email    string
-	Password string
-	FullName string
-}
-
-type RegisterNewUserOutput struct {
-	User models.User
-	// SecurityProfile models.SecurityProfile
-	// BillingProfile models.BillingProfile
-}
-
-func (domain *Domain) RegisterNewUser(
-	ctx context.Context,
-	input *RegisterNewUserInput,
-) (*RegisterNewUserOutput, error) {
-	span := sentry.StartSpan(ctx, "domains:registration:RegisterNewUser")
-	defer span.Finish()
-	result, err := domain.registrationService.RegisterNewUser(span.Context(), &registration.RegisterNewUserInput{
-		Email:    input.Email,
-		FullName: input.FullName,
-		Password: input.Password,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &RegisterNewUserOutput{
-		User: result.User,
-	}, nil
 }

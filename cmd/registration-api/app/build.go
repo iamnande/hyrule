@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/iamnande/hyrule/internal/services/notification"
 	"github.com/iamnande/hyrule/internal/services/password"
 	"go.uber.org/fx"
 
@@ -21,6 +22,7 @@ func Build() []fx.Option {
 		fx.Provide(
 			fx.Annotate(registrationService.NewService, fx.As(new(registration.RegistrationService))),
 			fx.Annotate(password.NewService, fx.As(new(registrationService.PasswordService))),
+			fx.Annotate(notification.NewService, fx.As(new(registration.NotificationService))),
 		),
 
 		// data layer

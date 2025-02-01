@@ -7,13 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/getsentry/sentry-go"
-	userbillingprofile "github.com/iamnande/hyrule/internal/repositories/user-billing-profile"
+	"github.com/iamnande/hyrule/internal/repositories/invites"
 	"github.com/segmentio/ksuid"
 
 	"github.com/iamnande/hyrule/internal/models"
 	"github.com/iamnande/hyrule/internal/partition"
+	billingProfile "github.com/iamnande/hyrule/internal/repositories/billing-profile"
+	securityProfile "github.com/iamnande/hyrule/internal/repositories/security-profile"
 	"github.com/iamnande/hyrule/internal/repositories/user"
-	usersecrurityprofile "github.com/iamnande/hyrule/internal/repositories/user-security-profile"
 )
 
 type RegisterNewUserInput struct {
@@ -42,49 +43,34 @@ func (service *Service) RegisterNewUser(
 
 	// prep
 	userID := ksuid.New()
-	createdAt := time.Now().UTC()
 	userPartition := partition.Partition{
 		Category: partition.CategoryUser,
-		ID:       input.Email,
+		ID:       userID.String(),
 	}
 
 	// user
-	userRecord := &user.Record{
-		PK: userPartition,
-		SK: partition.Partition{
-			Category: partition.CategoryUser,
-			ID:       "profile",
-		},
-		ID:        userID,
-		Email:     input.Email,
-		FullName:  input.FullName,
-		CreatedAt: createdAt,
-		UpdatedAt: createdAt,
-	}
+	userRecord := user.NewUser(user.NewUserParams{
+		Email:    input.Email,
+		FullName: input.FullName,
+	})
 
 	// security profile
-	userSecurityProfileRecord := &usersecrurityprofile.Record{
-		PK: userPartition,
-		SK: partition.Partition{
-			Category: partition.CategoryUser,
-			ID:       "security-profile",
-		},
+	securityProfileRecord := securityProfile.NewSecurityProfile(securityProfile.NewSecurityProfileParams{
+		Partition: userPartition,
 		Password:  hashedPassword,
-		CreatedAt: createdAt,
-		UpdatedAt: createdAt,
-	}
+	})
 
 	// billing profile
-	userBillingProfileRecord := &userbillingprofile.Record{
-		PK: userPartition,
-		SK: partition.Partition{
-			Category: partition.CategoryUser,
-			ID:       "billing-profile",
-		},
+	billingProfileRecord := billingProfile.NewBillingProfile(billingProfile.NewBillingProfileParams{
+		Partition: userPartition,
 		Plan:      models.BillingPlanConsumption,
-		CreatedAt: createdAt,
-		UpdatedAt: createdAt,
-	}
+	})
+
+	// invite
+	inviteRecord := invites.NewInvite(invites.NewInviteParams{
+		Partition: userPartition,
+		ExpiresAt: time.Now().UTC().Add(time.Hour * 24), // TODO: make configurable
+	})
 
 	// write all records in a single transaction
 	_, err = service.databaseClient.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
@@ -100,14 +86,21 @@ func (service *Service) RegisterNewUser(
 			{
 				Put: &types.Put{
 					TableName: &service.databaseConfig.Name,
-					Item:      userSecurityProfileRecord.Marshal(),
+					Item:      securityProfileRecord.Marshal(),
 				},
 			},
 			// billing profile
 			{
 				Put: &types.Put{
 					TableName: &service.databaseConfig.Name,
-					Item:      userBillingProfileRecord.Marshal(),
+					Item:      billingProfileRecord.Marshal(),
+				},
+			},
+			// invite
+			{
+				Put: &types.Put{
+					TableName: &service.databaseConfig.Name,
+					Item:      inviteRecord.Marshal(),
 				},
 			},
 		},
@@ -118,6 +111,6 @@ func (service *Service) RegisterNewUser(
 
 	return &RegisterNewUserOutput{
 		User: models.MarshalUser(userRecord),
-		Plan: userBillingProfileRecord.Plan,
+		Plan: billingProfileRecord.Plan,
 	}, nil
 }
