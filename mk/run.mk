@@ -1,8 +1,8 @@
 ENTRYPOINT    := ./cmd/main.go
 STACK_TIMEOUT := 10
 
-.PHONY: stack-restart
-stack-restart: stack-down stack-up ## run: restart the local environment
+.PHONY: stack-reset
+stack-reset: stack-down stack-up ## run: reset the local environment
 
 .PHONY: stack-up
 stack-up: ## run: start the local environment
