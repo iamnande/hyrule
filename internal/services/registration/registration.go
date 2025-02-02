@@ -2,15 +2,18 @@ package registration
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/getsentry/sentry-go"
+	"github.com/jordan-wright/email"
+
 	"github.com/iamnande/hyrule/internal/models"
-	billingProfile "github.com/iamnande/hyrule/internal/repositories/billing-profile"
+	"github.com/iamnande/hyrule/internal/repositories/billing-profile"
 	"github.com/iamnande/hyrule/internal/repositories/invites"
-	securityProfile "github.com/iamnande/hyrule/internal/repositories/security-profile"
+	"github.com/iamnande/hyrule/internal/repositories/security-profile"
 	"github.com/iamnande/hyrule/internal/repositories/user"
 )
 
@@ -45,13 +48,13 @@ func (service *Service) RegisterNewUser(
 	})
 
 	// security profile
-	securityProfileRecord := securityProfile.NewSecurityProfile(securityProfile.NewSecurityProfileParams{
+	securityProfileRecord := securityprofile.NewSecurityProfile(securityprofile.NewSecurityProfileParams{
 		Partition: userRecord.Partition(),
 		Password:  hashedPassword,
 	})
 
 	// billing profile
-	billingProfileRecord := billingProfile.NewBillingProfile(billingProfile.NewBillingProfileParams{
+	billingProfileRecord := billingprofile.NewBillingProfile(billingprofile.NewBillingProfileParams{
 		Partition: userRecord.Partition(),
 		Plan:      models.BillingPlanConsumption,
 	})
@@ -96,6 +99,26 @@ func (service *Service) RegisterNewUser(
 		},
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	// send verification email
+	// TODO: replace with an event produced to the notification outbox
+	emailHost := "localhost"
+	emailPort := 1025
+	emailEndpoint := fmt.Sprintf("%s:%d", emailHost, emailPort)
+	verificationEmail := email.NewEmail()
+	verificationEmail.To = []string{input.Email}
+	verificationEmail.From = "Hyrule <noreply@hyrule.com>"
+	verificationEmail.Subject = "[MHQ] Welcome to Hyrule!"
+	verificationEmail.HTML = []byte(`<h1>Welcome to Hyrule!</h1>
+	    <p>Thank you for signing up for Hyrule. We're excited to have you on board!</p>
+        <p>Please verify your account by clicking here: <a href="%s%s">Verify Account</a></p>
+		<p>Thanks,</p>
+		<p>The Hyrule Team</p>
+	`)
+
+	if err = verificationEmail.Send(emailEndpoint, nil); err != nil {
 		return nil, err
 	}
 

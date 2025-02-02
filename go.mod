@@ -10,13 +10,14 @@ require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/go-chi/chi/v5 v5.2.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/imroc/req/v3 v3.49.1
+	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/segmentio/ksuid v1.0.4
 	go.uber.org/fx v1.23.0
+	golang.org/x/crypto v0.31.0
 	golang.org/x/sync v0.10.0
 )
 
@@ -49,7 +50,6 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
