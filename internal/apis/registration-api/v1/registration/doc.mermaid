@@ -1,30 +1,32 @@
 flowchart TD
     CUSTOMER[fa:fa-user Customer] --> API_REGISTER[[POST /register \n\n apis.v1.registration.RegisterNewUser]]
 
-    subgraph API_SERVER[fa:fa-server Registration API]
+    subgraph API_SERVER
         API_REGISTER --> REGISTRATION_APP
     end
 
     subgraph REGISTRATION_APP[fa:fa-mail-bulk Registration App]
-        DOM_REGISTRATION[fa:fa-id-card domains.registration.RegisterNewUser]
-        DOM_REGISTRATION -->|Register New User| SVC_REGISTRATION[fa:fa-id-card services.registration.RegisterNewUser]
-        SVC_REGISTRATION -->|Create| DATABASE
-        SVC_REGISTRATION -->|Create| DATABASE
-        SVC_REGISTRATION -->|Create| DATABASE
-        SVC_REGISTRATION -->|Hash Password| PASSWORD_SERVICE
-        DOM_REGISTRATION -->|Send E-mail Verification Email| EMAIL_SERVER
+        DOM_REGISTRATION[fa:fa-id-card domains.registration.RegisterNewUser] -->|Register New User| REGISTRATION_SERVICE
+        DOM_REGISTRATION -->|Send E-mail Verification Email| NOTIFICATION_SERVICE
+        REGISTRATION_SERVICE -->|Hash Password| PASSWORD_SERVICE
+        REGISTRATION_SERVICE -->|Write Transaction| DATABASE
     end
 
     subgraph DATABASE[fa:fa-database Database]
-        REPO_USER[fa:fa-user User]
-        REPO_USER_SECURITY_PROFILE[fa:fa-lock User Security Profile]
-        REPO_USER_BILLING_PROFILE[fa:fa-calculator User Billing Profile]
+        REPO_USER[fa:fa-user repositories.users]
+        REPO_INVITE[fa:fa-envelope repositories.invites]
+        REPO_SECURITY_PROFILE[fa:fa-lock repositories.security-profile]
+        REPO_BILLING_PROFILE[fa:fa-calculator repositories.billing-profile]
     end
 
-    subgraph PASSWORD_SERVICE[fa:fa-lock Password Service]
+    subgraph REGISTRATION_SERVICE[fa:fa-lock Registration Service]
+        SVC_REGISTRATION[fa:fa-id-card services.registration.RegisterNewUser]
+    end
+
+    subgraph PASSWORD_SERVICE[fa:fa-shield Password Service]
         SVC_PASSWORD[fa:fa-lock services.password.HashPassword]
     end
 
-    subgraph EMAIL_SERVER[fa:fa-envelope Email Server]
-        SVC_EMAIL[fa:fa-envelope services.email.SendEmail]
+    subgraph NOTIFICATION_SERVICE[fa:fa-envelope Notification Server]
+        SVC_NOTIFY[fa:fa-envelope services.notifications.Notify]
     end

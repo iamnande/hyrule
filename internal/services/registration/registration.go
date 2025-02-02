@@ -104,6 +104,8 @@ func (service *Service) RegisterNewUser(
 
 	// send verification email
 	// TODO: replace with an event produced to the notification outbox
+	// TODO: move to registration domain via notification service
+	// TODO: event outbox
 	emailHost := "localhost"
 	emailPort := 1025
 	emailEndpoint := fmt.Sprintf("%s:%d", emailHost, emailPort)

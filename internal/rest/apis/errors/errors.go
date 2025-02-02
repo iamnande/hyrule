@@ -63,11 +63,33 @@ func (err *BaseError) Unwrap() error {
 	return err.InternalError
 }
 
+type InvalidAttributes []InvalidAttribute
+
+func (invalidAttributes InvalidAttributes) String() string {
+	var (
+		invalidAttributeStrings []string
+	)
+	for _, invalidAttribute := range invalidAttributes {
+		invalidAttributeStrings = append(invalidAttributeStrings, invalidAttribute.String())
+	}
+	return strings.Join(invalidAttributeStrings, ", ")
+}
+
 type InvalidAttribute struct {
 	Path   string          `json:"path"`
 	Rule   validation.Rule `json:"rule"`
 	Reason string          `json:"reason"`
 	Source AttributeSource `json:"source"`
+}
+
+func (invalidAttribute InvalidAttribute) String() string {
+	return fmt.Sprintf(
+		"'%s' in %s failed validation: %s (%s)",
+		invalidAttribute.Path,
+		invalidAttribute.Source,
+		invalidAttribute.Reason,
+		invalidAttribute.Rule,
+	)
 }
 
 func NewInternalServerError(ctx context.Context, err error) *BaseError {

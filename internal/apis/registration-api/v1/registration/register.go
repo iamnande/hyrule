@@ -16,8 +16,8 @@ type RegisterNewUserRequest struct {
 	Password string `json:"password"`
 }
 
-func (req *RegisterNewUserRequest) Validate() []apiErrors.InvalidAttribute {
-	var errors []apiErrors.InvalidAttribute
+func (req *RegisterNewUserRequest) Validate() apiErrors.InvalidAttributes {
+	var errors apiErrors.InvalidAttributes
 	if req.Email == "" {
 		errors = append(errors, apiErrors.InvalidAttribute{
 			Path:   "email",

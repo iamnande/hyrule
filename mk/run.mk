@@ -22,3 +22,7 @@ stack-down: ## run: stop the local environment
 .PHONY: run-registration-api
 run-registration-api: ## run: Registration API
 	go run -ldflags $(GO_LDFLAGS) $(ENTRYPOINT) -cmd=registration-api
+
+.PHONY: run-invite-api
+run-invite-api: ## run: Invite API
+	go run -ldflags $(GO_LDFLAGS) $(ENTRYPOINT) -cmd=invite-api

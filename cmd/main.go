@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	inviteapi "github.com/iamnande/hyrule/cmd/invite-api"
 	registrationapi "github.com/iamnande/hyrule/cmd/registration-api"
 	"github.com/iamnande/hyrule/internal/version"
 )
@@ -17,6 +18,7 @@ const (
 
 	cmdVersion         serviceCMD = "version"
 	cmdRegistrationAPI serviceCMD = "registration-api"
+	cmdInviteAPI       serviceCMD = "invite-api"
 
 	serviceNameFormat    = "%s-%s"
 	serviceVersionFormat = "%s %s %s"
@@ -25,6 +27,7 @@ const (
 var availableCMDs = []serviceCMD{
 	cmdVersion,
 	cmdRegistrationAPI,
+	cmdInviteAPI,
 }
 
 func main() {
@@ -40,6 +43,9 @@ func main() {
 	case cmdRegistrationAPI:
 		version.ServiceName = fmt.Sprintf(serviceNameFormat, version.ServicePrefix, cmdRegistrationAPI)
 		registrationapi.Run()
+	case cmdInviteAPI:
+		version.ServiceName = fmt.Sprintf(serviceNameFormat, version.ServicePrefix, cmdInviteAPI)
+		inviteapi.Run()
 	case cmdVersion:
 		fmt.Printf(serviceVersionFormat, version.ServicePrefix, cmdVersion, version.ServiceVersion)
 	default:
