@@ -2,19 +2,18 @@ package registration
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/getsentry/sentry-go"
-	"github.com/jordan-wright/email"
+	"github.com/segmentio/ksuid"
 
 	"github.com/iamnande/hyrule/internal/models"
-	"github.com/iamnande/hyrule/internal/repositories/billing-profile"
+	"github.com/iamnande/hyrule/internal/repositories/billing-profiles"
 	"github.com/iamnande/hyrule/internal/repositories/invites"
-	"github.com/iamnande/hyrule/internal/repositories/security-profile"
-	"github.com/iamnande/hyrule/internal/repositories/user"
+	"github.com/iamnande/hyrule/internal/repositories/security-profiles"
+	"github.com/iamnande/hyrule/internal/repositories/users"
 )
 
 type RegisterNewUserInput struct {
@@ -24,8 +23,9 @@ type RegisterNewUserInput struct {
 }
 
 type RegisterNewUserOutput struct {
-	User models.User
-	Plan models.BillingPlan
+	User        models.User
+	Plan        models.BillingPlan
+	InviteToken ksuid.KSUID
 }
 
 func (service *Service) RegisterNewUser(
@@ -42,19 +42,19 @@ func (service *Service) RegisterNewUser(
 	}
 
 	// user
-	userRecord := user.NewUser(user.NewUserParams{
+	userRecord := users.NewUser(users.NewUserParams{
 		Email:    input.Email,
 		FullName: input.FullName,
 	})
 
 	// security profile
-	securityProfileRecord := securityprofile.NewSecurityProfile(securityprofile.NewSecurityProfileParams{
+	securityProfileRecord := securityprofiles.NewSecurityProfile(securityprofiles.NewSecurityProfileParams{
 		Partition: userRecord.Partition(),
 		Password:  hashedPassword,
 	})
 
 	// billing profile
-	billingProfileRecord := billingprofile.NewBillingProfile(billingprofile.NewBillingProfileParams{
+	billingProfileRecord := billingprofiles.NewBillingProfile(billingprofiles.NewBillingProfileParams{
 		Partition: userRecord.Partition(),
 		Plan:      models.BillingPlanConsumption,
 	})
@@ -102,30 +102,9 @@ func (service *Service) RegisterNewUser(
 		return nil, err
 	}
 
-	// send verification email
-	// TODO: replace with an event produced to the notification outbox
-	// TODO: move to registration domain via notification service
-	// TODO: event outbox
-	emailHost := "localhost"
-	emailPort := 1025
-	emailEndpoint := fmt.Sprintf("%s:%d", emailHost, emailPort)
-	verificationEmail := email.NewEmail()
-	verificationEmail.To = []string{input.Email}
-	verificationEmail.From = "Hyrule <noreply@hyrule.com>"
-	verificationEmail.Subject = "[MHQ] Welcome to Hyrule!"
-	verificationEmail.HTML = []byte(`<h1>Welcome to Hyrule!</h1>
-	    <p>Thank you for signing up for Hyrule. We're excited to have you on board!</p>
-        <p>Please verify your account by clicking here: <a href="%s%s">Verify Account</a></p>
-		<p>Thanks,</p>
-		<p>The Hyrule Team</p>
-	`)
-
-	if err = verificationEmail.Send(emailEndpoint, nil); err != nil {
-		return nil, err
-	}
-
 	return &RegisterNewUserOutput{
-		User: models.MarshalUser(userRecord),
-		Plan: billingProfileRecord.Plan,
+		User:        models.MarshalUser(userRecord),
+		Plan:        billingProfileRecord.Plan,
+		InviteToken: inviteRecord.Token,
 	}, nil
 }

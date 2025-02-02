@@ -3,8 +3,9 @@ package models
 import (
 	"time"
 
-	"github.com/iamnande/hyrule/internal/repositories/user"
 	"github.com/segmentio/ksuid"
+
+	"github.com/iamnande/hyrule/internal/repositories/users"
 )
 
 type User struct {
@@ -18,7 +19,7 @@ type User struct {
 	DeletedAt *time.Time
 }
 
-func MarshalUser(record *user.Record) User {
+func MarshalUser(record *users.Record) User {
 	return User{
 		ID:        record.ID,
 		Email:     record.Email,

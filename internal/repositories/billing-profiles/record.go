@@ -1,44 +1,43 @@
-package securityprofile
+package billingprofiles
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/iamnande/hyrule/internal/models"
 
 	"github.com/iamnande/hyrule/internal/database"
 	"github.com/iamnande/hyrule/internal/partition"
 )
 
 const (
-	FieldPassword = "UserSecurityPassword"
-	FieldVerified = "UserSecurityVerified"
+	FieldPlan = "UserBillingPlan"
 )
 
 type Record struct {
 	PK partition.Partition
 	SK partition.Partition
 
-	Password string
-	Verified bool
+	Plan models.BillingPlan
 
 	database.TimestampFields
 }
 
-type NewSecurityProfileParams struct {
+type NewBillingProfileParams struct {
 	Partition partition.Partition
-	Password  string
+	Plan      models.BillingPlan
 }
 
-func NewSecurityProfile(params NewSecurityProfileParams) *Record {
+func NewBillingProfile(params NewBillingProfileParams) *Record {
 	now := time.Now().UTC()
 	return &Record{
 		PK: params.Partition,
 		SK: partition.Partition{
-			Category: partition.CategoryUser,
-			ID:       "security-profile",
+			Category: partition.CategoryAccount,
+			ID:       "billing-profile",
 		},
-		Password: params.Password,
+		Plan: models.BillingPlanConsumption,
 		TimestampFields: database.TimestampFields{
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -60,11 +59,8 @@ func (record *Record) PrimaryKey() map[string]types.AttributeValue {
 
 func (record *Record) Marshal() map[string]types.AttributeValue {
 	val := record.PrimaryKey()
-	val[FieldPassword] = &types.AttributeValueMemberS{
-		Value: record.Password,
-	}
-	val[FieldVerified] = &types.AttributeValueMemberBOOL{
-		Value: record.Verified,
+	val[FieldPlan] = &types.AttributeValueMemberS{
+		Value: string(record.Plan),
 	}
 	record.TimestampFields.Marshal(val)
 	return val
@@ -88,18 +84,11 @@ func Unmarshal(item map[string]types.AttributeValue) (*Record, error) {
 		return nil, fmt.Errorf("failed to parse sort key: %w", err)
 	}
 
-	// Password
-	if field, exists := item[FieldPassword].(*types.AttributeValueMemberS); exists {
-		record.Password = field.Value
+	// Plan
+	if field, exists := item[FieldPlan].(*types.AttributeValueMemberS); exists {
+		record.Plan = models.BillingPlan(field.Value)
 	} else {
-		return nil, fmt.Errorf("failed to parse password: %v", item[FieldPassword])
-	}
-
-	// Verified
-	if field, exists := item[FieldVerified].(*types.AttributeValueMemberBOOL); exists {
-		record.Verified = field.Value
-	} else {
-		return nil, fmt.Errorf("failed to parse verified: %v", item[FieldVerified])
+		return nil, fmt.Errorf("failed to parse plan: %v", item[FieldPlan])
 	}
 
 	// Timestamps

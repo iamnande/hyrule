@@ -22,6 +22,14 @@ type PutItem interface {
 	) (*dynamodb.PutItemOutput, error)
 }
 
+type UpdateItem interface {
+	UpdateItem(
+		ctx context.Context,
+		params *dynamodb.UpdateItemInput,
+		optFns ...func(*dynamodb.Options),
+	) (*dynamodb.UpdateItemOutput, error)
+}
+
 type TransactWriteItems interface {
 	TransactWriteItems(
 		ctx context.Context,

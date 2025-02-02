@@ -2,6 +2,7 @@ package registration
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/getsentry/sentry-go"
 
@@ -43,18 +44,18 @@ func (domain *Domain) RegisterNewUser(
 		return nil, err
 	}
 
-	// Email notification
-	// type=email,templateName=ACCOUNT_VERIFICATION
 	if err = domain.notificationService.NotifyEmail(span.Context(), &notification.NotifyEmailInput{
 		Recipient: userRegistration.User.Email,
 
 		Template: notification.TemplateAccountVerification,
 		Metadata: map[string]string{
-			"user.id":    userRegistration.User.ID.String(),
-			"user.email": userRegistration.User.Email,
-			"user.name":  userRegistration.User.FullName,
-			"plan.name":  userRegistration.Plan.String(),
-			"verify.url": "http://localhost:8000/v1/verify?token=" + "token",
+			"user.name": userRegistration.User.FullName,
+			"plan.name": userRegistration.Plan.String(),
+			"verify.url": fmt.Sprintf("http://%s:%s/v1/invites/%s/accept",
+				"localhost",
+				"8000",
+				userRegistration.InviteToken.String(),
+			),
 		},
 	}); err != nil {
 		return nil, err
