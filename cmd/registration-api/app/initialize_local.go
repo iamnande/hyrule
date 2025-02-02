@@ -19,7 +19,6 @@ func Initialize() []fx.Option {
 		fx.Invoke(rest.NewServer),
 		app.StartupModule,
 		app.ShutdownModule,
-		// TODO: local db override
 	)
 	return opts
 }

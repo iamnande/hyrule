@@ -19,7 +19,7 @@ type Params struct {
 	APIs      []rest.APIHandler `group:"registration-api:v1:apis"`
 }
 
-func NewAdminAPIRouter(params Params) (http.Handler, error) {
+func NewRegistrationAPIRouter(params Params) (http.Handler, error) {
 	return router.NewRouter(&router.Config{
 		Logger:      params.Logger,
 		HealthAPI:   params.HealthAPI,

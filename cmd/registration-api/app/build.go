@@ -1,8 +1,6 @@
 package app
 
 import (
-	"github.com/iamnande/hyrule/internal/services/notification"
-	"github.com/iamnande/hyrule/internal/services/password"
 	"go.uber.org/fx"
 
 	healthAPI "github.com/iamnande/hyrule/internal/apis/registration-api/health"
@@ -10,8 +8,10 @@ import (
 	v1RegistrationAPI "github.com/iamnande/hyrule/internal/apis/registration-api/v1/registration"
 	"github.com/iamnande/hyrule/internal/config"
 	"github.com/iamnande/hyrule/internal/database"
-	"github.com/iamnande/hyrule/internal/domains/registration"
-	registrationService "github.com/iamnande/hyrule/internal/services/registration"
+	registrationDomain "github.com/iamnande/hyrule/internal/domains/registration"
+	"github.com/iamnande/hyrule/internal/services/notification"
+	"github.com/iamnande/hyrule/internal/services/password"
+	"github.com/iamnande/hyrule/internal/services/registration"
 )
 
 func Build() []fx.Option {
@@ -20,31 +20,38 @@ func Build() []fx.Option {
 
 		// service layer
 		fx.Provide(
-			fx.Annotate(registrationService.NewService, fx.As(new(registration.RegistrationService))),
-			fx.Annotate(password.NewService, fx.As(new(registrationService.PasswordService))),
-			fx.Annotate(notification.NewService, fx.As(new(registration.NotificationService))),
+			fx.Annotate(password.NewService,
+				fx.As(new(registration.PasswordService)),
+			),
+			fx.Annotate(registration.NewService,
+				fx.As(new(registrationDomain.RegistrationService)),
+			),
+			fx.Annotate(notification.NewService,
+				fx.As(new(registrationDomain.NotificationService)),
+			),
 		),
 
 		// data layer
 		fx.Provide(
 			// database client
-			fx.Annotate(
-				database.NewDatabaseClient,
+			fx.Annotate(database.NewDatabaseClient,
 				fx.As(new(healthAPI.DatabaseClient)),
-				fx.As(new(registrationService.DatabaseClient)),
+				fx.As(new(registration.DatabaseClient)),
 			),
 		),
 
 		// domain layer
 		fx.Provide(
-			fx.Annotate(registration.NewDomain, fx.As(new(v1RegistrationAPI.RegistrationDomain))),
+			fx.Annotate(registrationDomain.NewDomain,
+				fx.As(new(v1RegistrationAPI.RegistrationDomain)),
+			),
 		),
 
 		// runtime
 		fx.Provide(
 			healthAPI.NewHealthAPI,
 			v1RegistrationAPI.NewRegistrationAPI,
-			v1RegistrationAPIRouter.NewAdminAPIRouter,
+			v1RegistrationAPIRouter.NewRegistrationAPIRouter,
 		),
 	}
 }
