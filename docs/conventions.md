@@ -308,14 +308,26 @@ logging via `slog`; sentry spans around domain-level operations. the latter
 two aren't enforced by tooling yet, so it's easy to drift from without
 noticing - this is the reminder.
 
+## CI
+
+[.github/workflows/ci.yml](../.github/workflows/ci.yml): four independent
+jobs (`lint`, `unit`, `integration`, `smoke`), no `needs:` chaining between
+them - they don't share expensive setup, so failing fast on one doesn't
+save meaningful time and running them in parallel gets feedback faster.
+`integration`/`smoke` run the exact same `make stack-up` /
+`make db-migrate-up` / `make test-*` a human runs locally, not a
+CI-specific reimplementation - the local and CI paths are the same
+commands, so "works in CI" and "works locally" stay the same claim.
+toolchain comes from `mise.toml` via `jdx/mise-action`, same as
+`make bootstrap`.
+
 ## known gaps
 
-- no CI - `test-unit`/`test-integration`/`test-lint` all run locally, on
-  faith.
 - `golangci-lint`, `golang-migrate`, and `sqlc` aren't provisioned by `make
   bootstrap` - installed locally on faith (e.g. `brew install golangci-lint
-  golang-migrate sqlc`), same as the two gaps above. `oapi-codegen` doesn't
-  have this problem - it's a `go.mod` tool dependency, invoked as `go tool
-  oapi-codegen`.
+  golang-migrate sqlc`). CI installs `golangci-lint` and `golang-migrate`
+  itself (pinned versions, see the workflow), but `make bootstrap` still
+  doesn't. `oapi-codegen` doesn't have this problem - it's a `go.mod` tool
+  dependency, invoked as `go tool oapi-codegen`.
 - [docs/style.md](style.md)'s consumer-defined-interfaces rule isn't
   linted - nothing stops a producer-side interface from creeping in.
