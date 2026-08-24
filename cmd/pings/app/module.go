@@ -3,6 +3,7 @@ package app
 import (
 	"go.uber.org/fx"
 
+	"github.com/iamnande/hyrule/internal/lib/database"
 	"github.com/iamnande/hyrule/internal/lib/rest/capabilities/health"
 )
 
@@ -14,4 +15,5 @@ var Module = fx.Module(Name,
 		Liveness:  health.DefaultHandler,
 		Readiness: health.DefaultHandler,
 	}),
+	database.Module,
 )

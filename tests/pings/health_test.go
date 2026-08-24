@@ -60,13 +60,15 @@ var _ = Describe("HealthAPI", Ordered, ContinueOnFailure, func() {
 	})
 
 	Describe("the /healthz route", func() {
-		Context("when pings has no dependency checks configured", func() {
-			It("reports itself up with no dependencies listed", func() {
+		Context("with the database reachable", func() {
+			It("reports itself up with the database listed as a hard dependency", func() {
 				call, err := req.Get(baseURL + "/healthz")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(call.String()).To(SatisfyAll(
 					ContainSubstring(`"status":"up"`),
-					ContainSubstring(`"dependencies":[]`),
+					ContainSubstring(`"name":"database"`),
+					ContainSubstring(`"status":"up"`),
+					ContainSubstring(`"type":"hard"`),
 				))
 			})
 		})

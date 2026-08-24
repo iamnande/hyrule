@@ -37,13 +37,16 @@ type HealthAPIParams struct {
 	Deployment config.Deployment
 	Service    version.ServiceInfo
 	Probes     health.Probes
+	// Dependencies are contributed by whatever a service actually depends
+	// on (e.g. internal/lib/database) - this package stays domain-free.
+	Dependencies []health.Option `group:"healthDependencies"`
 }
 
 // NewHealthAPI wires the health capability every service gets for free -
-// only the Probes are the service's own (see internal/lib/rest/capabilities/health).
+// only the Probes (and any Dependencies) are the service's own (see
+// internal/lib/rest/capabilities/health).
 func NewHealthAPI(params HealthAPIParams) (HealthAPIResult, error) {
-	handler, err := health.NewAPI(
-		params.Probes,
+	opts := append([]health.Option{
 		health.WithLogger(params.Logger),
 		health.WithServiceMetadata(&health.ServiceMetadata{
 			Name:        params.Service.Name,
@@ -57,7 +60,9 @@ func NewHealthAPI(params HealthAPIParams) (HealthAPIResult, error) {
 				"conventions": version.RepositoryURL + "/blob/main/docs/conventions.md",
 			},
 		}),
-	)
+	}, params.Dependencies...)
+
+	handler, err := health.NewAPI(params.Probes, opts...)
 	if err != nil {
 		return HealthAPIResult{}, err
 	}
