@@ -27,9 +27,9 @@ func NewRouter(cfg *Config) http.Handler {
 	// TODO: router.Use(REQUEST_FEATURE_FLAG)
 	router.Use(middleware.ResponsePanicRecovery)
 	router.Use(middleware.ResponseLogger)
-	router.Mount(cfg.HealthAPI.URLPath(), cfg.HealthAPI.Handler())
+	cfg.HealthAPI(router)
 	for _, api := range cfg.APIs {
-		router.Mount(api.URLPath(), api.Handler())
+		api(router)
 	}
 	return router
 }

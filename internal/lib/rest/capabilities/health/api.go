@@ -28,7 +28,7 @@ type Probes struct {
 //		Liveness:  health.DefaultHandler,
 //		Readiness: health.DefaultHandler,
 //	})
-func NewAPI(probes Probes, configOptions ...Option) (http.Handler, error) {
+func NewAPI(probes Probes, configOptions ...Option) (func(chi.Router), error) {
 	cfg := DefaultConfig()
 	for _, opt := range configOptions {
 		opt(cfg)
@@ -48,12 +48,11 @@ func NewAPI(probes Probes, configOptions ...Option) (http.Handler, error) {
 		cfg.logger = slog.Default()
 	}
 
-	api := chi.NewRouter()
-	api.Get("/discovery", discoveryHandler(cfg))
-	api.Get("/healthz", dependencyChecksHandler(cfg))
-	api.Get("/startupz", probes.Startup)
-	api.Get("/livez", probes.Liveness)
-	api.Get("/readyz", probes.Readiness)
-
-	return api, nil
+	return func(api chi.Router) {
+		api.Get("/discovery", discoveryHandler(cfg))
+		api.Get("/healthz", dependencyChecksHandler(cfg))
+		api.Get("/startupz", probes.Startup)
+		api.Get("/livez", probes.Liveness)
+		api.Get("/readyz", probes.Readiness)
+	}, nil
 }

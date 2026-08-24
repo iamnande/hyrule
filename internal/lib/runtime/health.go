@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"log/slog"
-	"net/http"
 
 	"go.uber.org/fx"
 
@@ -11,18 +10,6 @@ import (
 	"github.com/iamnande/hyrule/internal/lib/rest/capabilities/health"
 	"github.com/iamnande/hyrule/internal/lib/version"
 )
-
-type healthAPI struct {
-	handler http.Handler
-}
-
-func (api *healthAPI) URLPath() string {
-	return "/"
-}
-
-func (api *healthAPI) Handler() http.Handler {
-	return api.handler
-}
 
 type HealthAPIResult struct {
 	fx.Out
@@ -62,11 +49,11 @@ func NewHealthAPI(params HealthAPIParams) (HealthAPIResult, error) {
 		}),
 	}, params.Dependencies...)
 
-	handler, err := health.NewAPI(params.Probes, opts...)
+	register, err := health.NewAPI(params.Probes, opts...)
 	if err != nil {
 		return HealthAPIResult{}, err
 	}
 	return HealthAPIResult{
-		API: &healthAPI{handler: handler},
+		API: rest.APIHandler(register),
 	}, nil
 }
