@@ -9,7 +9,7 @@ import (
 
 	"github.com/iamnande/hyrule/internal/lib/database"
 	"github.com/iamnande/hyrule/internal/svc/pings/domain"
-	generated "github.com/iamnande/hyrule/internal/svc/pings/repository/generated"
+	"github.com/iamnande/hyrule/internal/svc/pings/repository/ping"
 )
 
 type Repository struct {
@@ -21,25 +21,25 @@ func New(pool *pgxpool.Pool) *Repository {
 }
 
 func (r *Repository) Upsert(ctx context.Context, name string, kind domain.Kind) (domain.Ping, error) {
-	var ping domain.Ping
+	var result domain.Ping
 	err := database.WithTx(ctx, r.pool, func(ctx context.Context, tx pgx.Tx) error {
-		row, err := generated.New(tx).UpsertPing(ctx, generated.UpsertPingParams{
+		row, err := ping.New(tx).Upsert(ctx, ping.UpsertParams{
 			Name: name,
 			Kind: string(kind),
 		})
 		if err != nil {
 			return fmt.Errorf("upsert ping: %w", err)
 		}
-		ping = toDomain(row)
+		result = toDomain(row)
 		return nil
 	})
-	return ping, err
+	return result, err
 }
 
 func (r *Repository) List(ctx context.Context) ([]domain.Ping, error) {
 	var pings []domain.Ping
 	err := database.WithTx(ctx, r.pool, func(ctx context.Context, tx pgx.Tx) error {
-		rows, err := generated.New(tx).ListPings(ctx)
+		rows, err := ping.New(tx).List(ctx)
 		if err != nil {
 			return fmt.Errorf("list pings: %w", err)
 		}
@@ -52,7 +52,7 @@ func (r *Repository) List(ctx context.Context) ([]domain.Ping, error) {
 	return pings, err
 }
 
-func toDomain(row generated.Ping) domain.Ping {
+func toDomain(row ping.Ping) domain.Ping {
 	return domain.Ping{
 		Name:        row.Name,
 		Kind:        domain.Kind(row.Kind),

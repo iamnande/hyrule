@@ -215,7 +215,9 @@ migrations live in [migrations](../migrations) at the repo root, applied
 with `make db-migrate-up` (`make db-migrate-create NAME=...` to scaffold
 one) - see [mk/database.mk](../mk/database.mk). `sqlc` (config at
 [sqlc.yaml](../sqlc.yaml)) generates from `migrations/` and each service's
-own `repository/queries/*.sql` into `repository/generated` -
+own `repository/queries/*.sql` into `repository/<entity>` (e.g.
+`repository/ping`) - the package is named after the entity, not
+`generated`, so call sites read as `ping.Upsert(...)`, not a stutter.
 `sqlc generate` after any migration or query change.
 
 **every query gets a supporting index, in the same migration.** if a query

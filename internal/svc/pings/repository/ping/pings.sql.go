@@ -3,18 +3,18 @@
 //   sqlc v1.31.1
 // source: pings.sql
 
-package repository
+package ping
 
 import (
 	"context"
 )
 
-const listPings = `-- name: ListPings :many
+const list = `-- name: List :many
 SELECT name, kind, first_seen_at, last_seen_at FROM pings ORDER BY name
 `
 
-func (q *Queries) ListPings(ctx context.Context) ([]Ping, error) {
-	rows, err := q.db.Query(ctx, listPings)
+func (q *Queries) List(ctx context.Context) ([]Ping, error) {
+	rows, err := q.db.Query(ctx, list)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (q *Queries) ListPings(ctx context.Context) ([]Ping, error) {
 	return items, nil
 }
 
-const upsertPing = `-- name: UpsertPing :one
+const upsert = `-- name: Upsert :one
 INSERT INTO pings (name, kind)
 VALUES ($1, $2)
 ON CONFLICT (name) DO UPDATE
@@ -47,13 +47,13 @@ ON CONFLICT (name) DO UPDATE
 RETURNING name, kind, first_seen_at, last_seen_at
 `
 
-type UpsertPingParams struct {
+type UpsertParams struct {
 	Name string `json:"name"`
 	Kind string `json:"kind"`
 }
 
-func (q *Queries) UpsertPing(ctx context.Context, arg UpsertPingParams) (Ping, error) {
-	row := q.db.QueryRow(ctx, upsertPing, arg.Name, arg.Kind)
+func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (Ping, error) {
+	row := q.db.QueryRow(ctx, upsert, arg.Name, arg.Kind)
 	var i Ping
 	err := row.Scan(
 		&i.Name,

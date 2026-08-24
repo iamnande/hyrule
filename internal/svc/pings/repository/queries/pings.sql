@@ -1,4 +1,4 @@
--- name: UpsertPing :one
+-- name: Upsert :one
 INSERT INTO pings (name, kind)
 VALUES ($1, $2)
 ON CONFLICT (name) DO UPDATE
@@ -6,5 +6,5 @@ ON CONFLICT (name) DO UPDATE
         last_seen_at = now()
 RETURNING *;
 
--- name: ListPings :many
+-- name: List :many
 SELECT * FROM pings ORDER BY name;

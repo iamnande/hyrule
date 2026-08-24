@@ -5,7 +5,7 @@ sql:
     schema: "migrations"
     gen:
       go:
-        package: "repository"
-        out: "internal/svc/pings/repository/generated"
+        package: "ping"
+        out: "internal/svc/pings/repository/ping"
         sql_package: "pgx/v5"
         emit_json_tags: true
