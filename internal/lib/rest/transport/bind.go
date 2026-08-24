@@ -17,7 +17,7 @@ type Validateable interface {
 func BindQuery(ctx context.Context, obj Validateable) *errors.BaseError {
 	if invalidAttributes := obj.Validate(); invalidAttributes != nil {
 		for _, invalidAttribute := range invalidAttributes {
-			tracing.SetTag(ctx, fmt.Sprintf("request:attribute:%s:%s", invalidAttribute.Source, invalidAttribute.Path), invalidAttribute.String())
+			tracing.SetTag(ctx, fmt.Sprintf("request.attribute.%s.%s", invalidAttribute.Source, invalidAttribute.Path), invalidAttribute.String())
 		}
 		return errors.NewBadRequestError(ctx, invalidAttributes...)
 	}
@@ -32,7 +32,7 @@ func BindJSON(ctx context.Context, in io.ReadCloser, obj Validateable) *errors.B
 	}
 	if invalidAttributes := obj.Validate(); invalidAttributes != nil {
 		for _, invalidAttribute := range invalidAttributes {
-			tracing.SetTag(ctx, fmt.Sprintf("request:attribute:%s:%s", invalidAttribute.Source, invalidAttribute.Path), invalidAttribute.String())
+			tracing.SetTag(ctx, fmt.Sprintf("request.attribute.%s.%s", invalidAttribute.Source, invalidAttribute.Path), invalidAttribute.String())
 		}
 		return errors.NewBadRequestError(ctx, invalidAttributes...)
 	}

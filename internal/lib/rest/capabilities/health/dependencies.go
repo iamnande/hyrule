@@ -65,7 +65,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 			responseController = http.NewResponseController(w)
 			weightedSemaphore  = semaphore.NewWeighted(dependencyCheckCount)
 		)
-		spanCtx, done := tracing.StartNamed(r.Context(), "dependencies:check:all")
+		spanCtx, done := tracing.StartNamed(r.Context(), "dependencies.check.all")
 		defer done()
 		tracing.SetTag(spanCtx, "dependencies.count", fmt.Sprintf("%d", len(cfg.dependencyChecks)))
 		tracing.SetTag(spanCtx, "dependencies.timeout", cfg.timeout.String())
@@ -80,7 +80,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 
 		// check all dependencies
 		for _, check := range cfg.dependencyChecks {
-			checkCtx, checkDone := tracing.StartNamed(ctx, fmt.Sprintf("dependencies:check:%s", check.name))
+			checkCtx, checkDone := tracing.StartNamedf(ctx, "dependencies.check.%s", check.name)
 			if err = weightedSemaphore.Acquire(ctx, 1); err != nil {
 				cfg.logger.Error("failed to acquire semaphore", slog.Any("error", err))
 			}
@@ -96,7 +96,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 					status.Status = DependencyStatusUp
 				}
 				dependencyChecks.Store(dependency.name, status)
-				tracing.SetTag(ctx, fmt.Sprintf("dependencies:%s:status", dependency.name), status.Status.String())
+				tracing.SetTag(ctx, fmt.Sprintf("dependencies.%s.status", dependency.name), status.Status.String())
 			}(checkCtx, &dependencyChecks, check)
 		}
 
@@ -120,7 +120,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 		if response.Status == DependencyStatusDown {
 			w.WriteHeader(http.StatusServiceUnavailable)
 		}
-		tracing.SetTag(spanCtx, "dependencies:status", response.Status.String())
+		tracing.SetTag(spanCtx, "dependencies.status", response.Status.String())
 		body, err := json.Marshal(response)
 		if err != nil {
 			cfg.logger.Error("failed to marshal dependency check response", slog.Any("error", err))
