@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "internal/svc/pings/repository/queries"
+    schema: "migrations"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/svc/pings/repository/generated"
+        sql_package: "pgx/v5"
+        emit_json_tags: true

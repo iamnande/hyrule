@@ -4,6 +4,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/iamnande/hyrule/internal/lib/config"
+	"github.com/iamnande/hyrule/internal/svc/pings/domain"
 )
 
 func TestConfigs() []fx.Option {
@@ -15,5 +16,6 @@ func TestConfigs() []fx.Option {
 		}),
 		fx.Supply(config.HTTPServer{Addr: ":0"}),
 		fx.Provide(config.LoadDatabase()),
+		fx.Provide(domain.LoadConfig),
 	}
 }

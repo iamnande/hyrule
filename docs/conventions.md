@@ -207,8 +207,18 @@ query got complex, then the abstraction fought back. instead:
 
 migrations live in [migrations](../migrations) at the repo root, applied
 with `make db-migrate-up` (`make db-migrate-create NAME=...` to scaffold
-one) - see [mk/database.mk](../mk/database.mk). `sqlc` generation isn't
-wired up yet; that lands with the first real table.
+one) - see [mk/database.mk](../mk/database.mk). `sqlc` (config at
+[sqlc.yaml](../sqlc.yaml)) generates from `migrations/` and each service's
+own `repository/queries/*.sql` into `repository/generated` -
+`sqlc generate` after any migration or query change.
+
+**every query gets a supporting index, in the same migration.** if a query
+filters, joins, or orders on a column and that column isn't already covered
+by an existing index (a primary key covers itself - `pings.name` needs
+nothing extra for `WHERE name = $1` or `ORDER BY name`), the migration adding
+the query adds the index too. retrofitting an index after a table has real
+rows means an `ALTER` that locks or a `CREATE INDEX CONCURRENTLY` dance -
+cheap to avoid by never letting a query ship unindexed in the first place.
 
 ## testing
 
@@ -274,8 +284,10 @@ noticing - this is the reminder.
   not a chosen ruleset.
 - no CI - `test-unit`/`test-integration`/`test-lint` all run locally, on
   faith.
-- `golangci-lint` and `golang-migrate` aren't provisioned by `make
+- `golangci-lint`, `golang-migrate`, and `sqlc` aren't provisioned by `make
   bootstrap` - installed locally on faith (e.g. `brew install golangci-lint
-  golang-migrate`), same as the two gaps above.
+  golang-migrate sqlc`), same as the two gaps above. `oapi-codegen` doesn't
+  have this problem - it's a `go.mod` tool dependency, invoked as `go tool
+  oapi-codegen`.
 - [docs/style.md](style.md)'s consumer-defined-interfaces rule isn't
   linted - nothing stops a producer-side interface from creeping in.

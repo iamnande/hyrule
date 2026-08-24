@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: pings
+  description: >
+    a lightweight registry of homelab apps/services/hosts. a thing self-
+    reports by pinging - the first ping registers it, every ping after that
+    just proves it's still alive.
+  version: "2026-08-23"
+
+paths:
+  /pings:
+    post:
+      operationId: recordPing
+      summary: record a ping
+      description: >
+        registers the named thing on its first call, and bumps its
+        last-seen time on every call after - an upsert, not a create-only
+        endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PingRequest'
+      responses:
+        '200':
+          description: the ping was recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ping'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      operationId: listPings
+      summary: list everything registered
+      responses:
+        '200':
+          description: every thing that has ever pinged
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ping'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [host, service, app]
+
+    State:
+      type: string
+      description: >
+        derived, not stored - up if last_seen_at is within the service's
+        configured staleness window, stale otherwise.
+      enum: [up, stale]
+
+    PingRequest:
+      type: object
+      required: [name, kind]
+      properties:
+        name:
+          type: string
+          description: the unique, self-chosen name of the thing pinging in.
+          pattern: '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'
+        kind:
+          $ref: '#/components/schemas/Kind'
+
+    Ping:
+      type: object
+      required: [name, kind, first_seen_at, last_seen_at, state]
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/Kind'
+        first_seen_at:
+          type: string
+          format: date-time
+          description: when this name was first seen - i.e. when it registered.
+        last_seen_at:
+          type: string
+          format: date-time
+        state:
+          $ref: '#/components/schemas/State'
+
+    InvalidAttribute:
+      type: object
+      required: [path, rule, reason, source]
+      properties:
+        path:
+          type: string
+        rule:
+          type: string
+        reason:
+          type: string
+        source:
+          type: string
+          enum: [body, path, query, header]
+
+    Error:
+      type: object
+      required: [code, name, message, operation_id]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        message:
+          type: string
+        operation_id:
+          type: string
+        invalid_attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvalidAttribute'
+
+  responses:
+    BadRequest:
+      description: the request failed validation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: something went wrong on our end
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

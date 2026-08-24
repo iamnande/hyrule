@@ -7,7 +7,7 @@ working code. see [docs/architecture.md](docs/architecture.md) for the why.
 
 | service | entrypoint | what it does |
 |---|---|---|
-| `pings` | `cmd/pings` | scaffolding only right now - discovery + health probes, no domain endpoints yet |
+| `pings` | `cmd/pings` | a lightweight registry of homelab apps/services/hosts - a thing self-reports by pinging |
 
 ## running it
 
@@ -35,6 +35,8 @@ to `pings`: `make run SERVICE_NAME=other-service`.
 | `GET /livez` | liveness probe |
 | `GET /readyz` | readiness probe |
 | `GET /healthz` | dependency diagnostics |
+| `POST /pings` | record a ping - registers the name on first call, bumps last-seen after |
+| `GET /pings` | list everything registered, with derived state (`up`/`stale`) |
 
 ## requirements
 
