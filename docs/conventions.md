@@ -63,6 +63,12 @@ types and validators are generated from it (`oapi-codegen`); handlers
 implement the generated interface. the spec is written and reviewed before
 the handler exists.
 
+the spec itself lives at `api/<service>/openapi.yaml` - a top-level
+`api/` tree, not tucked inside `internal/svc/<service>/api/`. it's the
+contract a client reads, not an implementation detail of the Go package
+that happens to generate code from it; `internal/svc/<service>/api/` stays
+Go-only (the codegen config, generated types, and handlers).
+
 ## URL structure & versioning
 
 ```
