@@ -1,11 +1,13 @@
 # Project notes for agents
 
 For how this repo is built and the rules for changing it, see
-[README.md](README.md), [docs/architecture.md](docs/architecture.md), and
-[docs/conventions.md](docs/conventions.md) - read `docs/conventions.md`
-before making changes.
+[README.md](README.md), [docs/architecture.md](docs/architecture.md),
+[docs/conventions.md](docs/conventions.md), and [docs/style.md](docs/style.md)
+(general Go style, as opposed to conventions.md's repo-specific rules) -
+read `docs/conventions.md` before making changes.
 
-Deliberate decisions in this repo - do NOT silently revert them: none yet.
+Deliberate decisions in this repo - do NOT silently revert them: see
+[docs/decisions](docs/decisions).
 
 ## Maintaining this file
 

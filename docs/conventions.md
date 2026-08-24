@@ -141,6 +141,25 @@ for the aggregate dependency view instead.
 see [internal/lib/rest/capabilities/health/doc.go](../internal/lib/rest/capabilities/health/doc.go)
 for the implementation.
 
+## tracing
+
+span and tag names: `<component>.<action>[.<qualifier>]`, dots only - e.g.
+`dependencies.check.all`, `dependencies.check.database`. one separator, not
+whatever felt right at the call site - colons snuck in early and it was a
+mess.
+
+[internal/lib/tracing](../internal/lib/tracing) gives you three ways to
+start a span, cheapest first:
+
+- `tracing.Start(ctx)` - the default. names itself after the calling
+  function, so you never type a name at all.
+- `tracing.StartNamedf(ctx, format, args...)` - one span per item in a loop
+  (a dependency check, a resource) where the name needs a data-dependent
+  segment.
+- `tracing.StartNamed(ctx, name)` - static name that isn't the caller's.
+  rare enough that if you're reaching for it, `Start` or `StartNamedf` is
+  probably what you actually want.
+
 ## data layer
 
 **postgres.** RLS is a hard requirement eventually (see below), which rules
@@ -155,35 +174,43 @@ query got complex, then the abstraction fought back. instead:
   there's no abstraction ceiling to hit because there's no abstraction over
   the query language itself.
 - **`pgx`/`pgxpool`** as the driver and pool.
-- **migration tool: still open.** `golang-migrate`/`goose` (hand-written SQL,
-  boring, matches the rest of this repo's ethos) vs. `atlas` (declarative
-  schema diffing - the actual analog to Alembic's autogenerate, and it
-  models RLS policies as schema objects natively). leaning
-  `golang-migrate`/`goose` to start, revisiting only if the migration
-  workflow itself starts hurting - a decision to confirm, not one made yet.
+- **`golang-migrate`** for migrations - see
+  [docs/decisions/0001-migration-tool.md](decisions/0001-migration-tool.md)
+  for why over `atlas`.
 
 **RLS-readiness, built now even though no policy exists yet:**
 
 - every repository call runs inside an explicit transaction, even a single
   `SELECT` - RLS policies key off session GUCs (`SET LOCAL app.account_id =
-  ...`), which only live for the current transaction. the transaction+GUC-hook
-  helper belongs in `internal/lib/database`, with the GUC step a no-op today.
-  building this now means adding a real policy later is additive; building
-  it later means reworking every repository call site.
-- the app connects as a dedicated, non-owner postgres role from the start -
-  RLS is silently bypassed for the table owner and superusers unless
-  `FORCE ROW LEVEL SECURITY` is set, and it's an easy trap to inherit from
-  whatever role created the tables in local dev.
+  ...`), which only live for the current transaction. `database.WithTx`
+  (`internal/lib/database/tx.go`) is that helper, with the GUC step
+  (`setGUCs`) a no-op today. building this now means adding a real policy
+  later is additive; building it later means reworking every repository
+  call site.
+- the app connects as a dedicated, non-owner postgres role (`hyrule_app`)
+  from the start - RLS is silently bypassed for the table owner and
+  superusers unless `FORCE ROW LEVEL SECURITY` is set, and it's an easy trap
+  to inherit from whatever role created the tables in local dev. locally
+  that role is bootstrapped by
+  [docker/postgres/init](../docker/postgres/init) on first container start;
+  migrations still run as the owner role (`POSTGRES_USER`, see
+  `DATABASE_URL` in `mk/database.mk`).
 - entities that have an *owner* (account/workspace/user/team, when they
   exist) get their scoping column in their first migration, populated from
   day one, even before any policy references it. `pings` does not get one -
   it's self-reported homelab telemetry with no tenant, and a scoping column
   with nothing to scope by is the over-application of this pattern, not the
   point of it.
-- the health package's dependency check becomes a direct `pgx` ping,
-  replacing the old `dynamodb.Scan` call. not generalized behind a
-  cross-backend interface - there's exactly one backend to support, and
-  building that abstraction before a second backend exists is premature.
+- the health package's dependency check is a direct `pgx` ping
+  (`internal/lib/database/health.go`), replacing the old `dynamodb.Scan`
+  call. not generalized behind a cross-backend interface - there's exactly
+  one backend to support, and building that abstraction before a second
+  backend exists is premature.
+
+migrations live in [migrations](../migrations) at the repo root, applied
+with `make db-migrate-up` (`make db-migrate-create NAME=...` to scaffold
+one) - see [mk/database.mk](../mk/database.mk). `sqlc` generation isn't
+wired up yet; that lands with the first real table.
 
 ## testing
 
@@ -223,6 +250,19 @@ the final-stage `COPY --from=build` destination (`/service`) is a fixed
 path, not `${SERVICE_NAME}` - the exec-form `ENTRYPOINT` below it doesn't get
 build-arg substitution, so a parameterized path there would silently break.
 
+## commits
+
+[Conventional Commits](https://www.conventionalcommits.org/), `type(scope):
+description`. scope is usually a package/service name; `*` for something
+repo-wide. `!` after the scope for a breaking change.
+
+```
+feat(pings): add ping ingest endpoint
+fix(database): pool leak on failed health check
+chore(*): bump go to 1.27
+feat(*)!: new hyrule, who dis
+```
+
 ## already in practice, worth continuing deliberately
 
 errors wrapped with `%w` and enough context to debug without a stack trace;
@@ -236,3 +276,8 @@ noticing - this is the reminder.
   not a chosen ruleset.
 - no CI - `test-unit`/`test-integration`/`test-lint` all run locally, on
   faith.
+- `golangci-lint` and `golang-migrate` aren't provisioned by `make
+  bootstrap` - installed locally on faith (e.g. `brew install golangci-lint
+  golang-migrate`), same as the two gaps above.
+- [docs/style.md](style.md)'s consumer-defined-interfaces rule isn't
+  linted - nothing stops a producer-side interface from creeping in.
