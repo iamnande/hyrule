@@ -31,10 +31,12 @@ func NewServer(params Params) *http.Server {
 	srvr := &server{
 		logger: params.Logger,
 		Server: &http.Server{
-			Addr:    params.Config.Addr,
-			Handler: params.API,
-			// TODO: sane default timeouts
-			// TODO: configurable timeouts
+			Addr:              params.Config.Addr,
+			Handler:           params.API,
+			ReadHeaderTimeout: params.Config.ReadHeaderTimeout,
+			ReadTimeout:       params.Config.ReadTimeout,
+			WriteTimeout:      params.Config.WriteTimeout,
+			IdleTimeout:       params.Config.IdleTimeout,
 		},
 	}
 	params.Lifecycle.Append(fx.Hook{
