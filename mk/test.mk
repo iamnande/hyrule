@@ -24,16 +24,18 @@ test-unit: ## test: execute unit test suite
 	@go tool cover -html=$(UNIT_TEST_COVERAGE_PATH) -o $(UNIT_TEST_COVERAGE_HTML)
 
 .PHONY: test-integration
+INTEGRATION_TEST_PROCS := 4
 INTEGRATION_TEST_OPTS :=
 ifeq ($(TEST_VERBOSE),true)
-	INTEGRATION_TEST_OPTS += -ginkgo.v
+	INTEGRATION_TEST_OPTS += -v
 endif
 test-integration: ## test: execute integration test suite
 	@echo $(PROJECT_LOG_FMT) "executing integration test suite"
-	@go test -v \
-		-race \
-		-count=1 \
-		./tests/... $(INTEGRATION_TEST_OPTS)
+	@go tool ginkgo run -r \
+		--race \
+		--randomize-all \
+		--procs=$(INTEGRATION_TEST_PROCS) \
+		./tests $(INTEGRATION_TEST_OPTS)
 
 .PHONY: test-smoke
 SMOKE_BIN := /tmp/hyrule-smoke-$(SERVICE_NAME)

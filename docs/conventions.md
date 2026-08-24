@@ -251,6 +251,16 @@ ginkgo/gomega everywhere, including domain/service unit tests - colocated as
 specs. no mocking framework: a domain's own narrow interfaces (see packages,
 above) make a hand-written fake enough.
 
+`test-integration` runs via the `ginkgo` CLI (a `go.mod` tool, `go tool
+ginkgo`), not plain `go test` - `-p`-style parallelism across suites and
+across a suite's own top-level `Describe` blocks only happens through
+Ginkgo's own multi-process runner, not `go test`'s package-level
+concurrency. within one `Describe`, specs stay `Ordered` (required for
+`BeforeAll`/`AfterAll`) - they share one running server/DB connection and
+are inherently sequential (a `GET` asserting on what a prior `POST`
+created), not a parallelism opportunity. the parallelism is *across*
+`Describe` blocks and suites, not within one.
+
 ## config
 
 no `.env`, ever. real environment variables, sane `envDefault` tags cover
