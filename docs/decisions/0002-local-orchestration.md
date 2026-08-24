@@ -45,3 +45,22 @@ deploy.
 whether `homelab` itself runs a GitOps controller (Argo CD/Flux) on top of
 these charts - that's homelab's own concern, out of scope for what hyrule
 needs to prove locally.
+
+## addendum: kind's podman provider
+
+implementing this surfaced a real, 5-year-old open upstream gap: `kind
+load docker-image` (what Tilt uses to push locally-built images into the
+cluster) is hardcoded to shell out to a binary literally named `docker`,
+even with `KIND_EXPERIMENTAL_PROVIDER=podman` set. this repo's container
+engine is podman (no `docker` binary installed), so this bit immediately.
+
+reconsidered the choice rather than just working around it - checked
+k3d (podman support is equally labeled experimental, not more mature)
+and Podman Desktop's Kind/Minikube extensions (same underlying `kind` +
+podman pairing, just GUI-wrapped, not a different technology; podman's
+own `kube play` isn't a real cluster - no load balancing, PVs, or network
+policies). none of those alternatives remove the gap, so `kind` stands.
+fix in place: `make cluster-up` symlinks `docker` -> `podman` into a
+repo-local `.cluster/bin`, the same workaround kind's own maintainers
+point to. see [conventions.md#local-orchestration](../conventions.md#local-orchestration)
+for the full mechanics.

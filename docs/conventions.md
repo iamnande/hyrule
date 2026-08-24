@@ -349,6 +349,46 @@ jobs (`lint`, `unit`, `integration`, `smoke`).
   start) doesn't have that race; this is what caught CI's `integration`
   job cold the first time this workflow ran.
 
+## local orchestration
+
+[0002-local-orchestration](decisions/0002-local-orchestration.md): `kind` +
+Helm + Tilt. `make cluster-up` / `cluster-down` / `cluster-status` / `dev`
+(runs `tilt up`) - see [Tiltfile](../Tiltfile) and
+[deploy/](../deploy).
+
+- **chart lives at `deploy/helm/<service>`**, mirroring `api/<service>` -
+  non-Go artifacts get their own top-level tree, not a home under
+  `internal/svc/<service>`.
+- **`deploy/kind/postgres.yaml` is dev-only** - ephemeral storage, no
+  chart, reuses `docker/postgres/init/01-app-role.sql` verbatim (the
+  Tiltfile reads that file directly into a ConfigMap rather than
+  duplicating its contents). not a template for how a real homelab
+  postgres should run.
+- **Helm chart env vars are DB-agnostic by convention** - `values.yaml`'s
+  `env` map keys are rendered as `HYRULE_<KEY>` in the Deployment, one
+  source of truth for the `internal/lib/config` env tags each service
+  already reads.
+- **`kind`'s podman provider requires a `docker` shim** - `kind load
+  docker-image` (what Tilt uses to push locally-built images into the
+  cluster) is hardcoded to shell out to a binary literally named `docker`,
+  even with `KIND_EXPERIMENTAL_PROVIDER=podman` set - a 5-year-old open
+  upstream gap, not something fixable from this repo. `make cluster-up`
+  symlinks `docker` -> `podman` into `.cluster/bin` (gitignored,
+  repo-local) and prepends it to `PATH` for `make dev`. considered
+  switching to real Docker or k3d instead; k3d's podman support is
+  equally experimental, and Podman Desktop's Kind/Minikube extensions run
+  the same underlying `kind`+podman pairing under a GUI - neither
+  sidesteps this, so the symlink workaround (the same one kind's own
+  maintainers point to) stays.
+- **Tilt's `docker_build` needs `DOCKER_HOST` pointed at podman's
+  Docker-API-compatible socket, and `DOCKER_BUILDKIT=0`** - podman's
+  compat API doesn't implement BuildKit's gRPC protocol, so builds fall
+  back to the classic build path. `make dev` derives the socket path from
+  `podman machine inspect` and sets both automatically.
+- when `CONTAINER_ENGINE` is `docker` (see root `Makefile`), none of the
+  above applies - `mk/cluster.mk` only sets the podman-specific env when
+  podman is the active engine.
+
 ## known gaps
 
 - `golangci-lint`, `golang-migrate`, and `sqlc` aren't provisioned by `make
