@@ -73,9 +73,8 @@ header: Hyrule-Version: 2026-08-22
 
 the URL identifies the resource - it should describe *what*, not which
 binary serves it today or which contract snapshot the client wants. version
-lives in a header, not the path: Stripe (`Stripe-Version`) and ngrok
-(`Ngrok-Version`) both do this, and a resource's address shouldn't change
-just because its contract did.
+lives in a header, not the path: ngrok (`Ngrok-Version`) does this, and a
+resource's address shouldn't change just because its contract did.
 
 **version is scoped per service, not per entity.** a service ships one
 version for its entire surface, covering every entity it owns. an identity
@@ -95,10 +94,9 @@ when entities stop sharing a bounded context (data ownership, operational
 lifecycle, team ownership) and are only colocated for convenience.
 
 **relationships stay flat by default.** reference the related resource by a
-field, filter with a query param (`/v1/pings?filter[id]=X`, matching
-Stripe's `/v1/charges?filter[customer_id]=X`). nest a resource under its
-parent only for true composition - the child has no identity or lifecycle
-apart from the parent (e.g. `/v1/customers/{id}/sources`).
+field, filter with a query param (`/pings?filter[id]=X`). nest a resource
+under its parent only for true composition - the child has no identity or
+lifecycle apart from the parent (e.g. `/customers/{id}/sources`).
 
 ## probes
 
