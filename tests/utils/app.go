@@ -7,7 +7,8 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 
-	modules "github.com/iamnande/hyrule/internal/app"
+	modules "github.com/iamnande/hyrule/internal/lib/runtime"
+	"github.com/iamnande/hyrule/internal/lib/version"
 )
 
 type TestAPI struct {
@@ -26,7 +27,9 @@ func constructTestAPI(appOptions []fx.Option, opts ...fx.Option) TestAPI {
 	var t Target
 
 	options := []fx.Option{}
+	options = append(options, fx.Supply(version.NewServiceInfo("test")))
 	options = append(options, modules.LoggingModule)
+	options = append(options, modules.HTTPModule)
 	options = append(options, appOptions...)
 	options = append(options, opts...)
 	options = append(options, fx.Populate(&t))

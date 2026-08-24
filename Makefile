@@ -1,18 +1,23 @@
 SHELL := /usr/bin/env bash
 
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
+# make: project info (the repo as a whole - see SERVICE_NAME below for the
+# one deployable this invocation actually targets)
+ORG_NAME         := iamnande
+PROJECT_NAME     := hyrule
+PROJECT_VERSION  := $(shell cat VERSION)
+PROJECT_REPO_URL := github.com/$(ORG_NAME)/$(PROJECT_NAME)
+PROJECT_WORKDIR  := $(shell pwd)
+PROJECT_COMMIT   := $(shell git rev-parse HEAD | cut -c1-8)
+PROJECT_LOG_FMT  := `/bin/date "+%Y-%m-%d %H:%M:%S %z [$(ORG_NAME)-$(PROJECT_NAME)]"`
 
-# make: app info
-ORG_NAME     := iamnande
-APP_NAME     := hyrule
-APP_VERSION  := $(shell cat VERSION)
-APP_REPO_URL := github.com/$(ORG_NAME)/$(APP_NAME)
-APP_WORKDIR  := $(shell pwd)
-APP_COMMIT   := $(shell git rev-parse HEAD | cut -c1-8)
-APP_LOG_FMT  := `/bin/date "+%Y-%m-%d %H:%M:%S %z [$(ORG_NAME)-$(APP_NAME)]"`
+# make: which service under cmd/ this invocation targets - override per call,
+# e.g. `make run SERVICE_NAME=some-other-service`
+SERVICE_NAME ?= pings
+
+# make: container engine - prefer docker if present, fall back to podman.
+# every target below goes through this rather than hardcoding either.
+CONTAINER_ENGINE := $(shell command -v docker >/dev/null 2>&1 && echo docker || echo podman)
+COMPOSE           = $(CONTAINER_ENGINE) compose
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -30,6 +35,7 @@ help: ## display this help screen
 			awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ; \
 	done
 
+include mk/bootstrap.mk
 include mk/build.mk
 include mk/run.mk
 include mk/test.mk

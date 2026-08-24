@@ -8,7 +8,8 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 
-	registrationAPI "github.com/iamnande/hyrule/cmd/registration-api/app"
+	pingsAPI "github.com/iamnande/hyrule/cmd/pings/app"
+	"github.com/iamnande/hyrule/internal/lib/runtime"
 	"github.com/iamnande/hyrule/tests/utils"
 )
 
@@ -32,8 +33,8 @@ var _ = DescribeTable("Entrypoint",
 		Expect(initialized).To(BeTrue())
 	},
 	Entry(
-		"Registration API",
-		registrationAPI.Build(),
+		"Pings",
+		[]fx.Option{runtime.NewModule(pingsAPI.Name), pingsAPI.Module},
 		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
 	),
 )

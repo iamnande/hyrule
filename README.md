@@ -1,1 +1,60 @@
-# Hyrule
+# hyrule
+
+a reference implementation - a playbook for solving real problems, built as
+working code. see [docs/architecture.md](docs/architecture.md) for the why.
+
+## services
+
+| service | entrypoint | what it does |
+|---|---|---|
+| `pings` | `cmd/pings` | scaffolding only right now - discovery + health probes, no domain endpoints yet |
+
+## running it
+
+```
+make bootstrap   # install mise (if missing) and provision pinned tool versions
+make doctor      # verify your toolchain matches what's pinned
+make build       # compile pings for the local machine
+make run         # go run pings locally
+make image-build # build the pings container image
+make image-run   # run the built image locally
+make stack-up    # start the local dependency stack (docker-compose)
+make stack-down  # stop it
+make help        # everything else
+```
+
+`SERVICE_NAME` selects which service under `cmd/` a target targets, defaults
+to `pings`: `make run SERVICE_NAME=other-service`.
+
+## endpoints (pings)
+
+| path | what |
+|---|---|
+| `GET /discovery` | service name, version, commit, region, environment |
+| `GET /startupz` | startup probe |
+| `GET /livez` | liveness probe |
+| `GET /readyz` | readiness probe |
+| `GET /healthz` | dependency diagnostics |
+
+## requirements
+
+- `make bootstrap` handles the rest (installs [mise](https://mise.jdx.dev/), provisions Go at the version pinned in `mise.toml`)
+- `docker` or `podman` (either works - `make` picks whichever is on `PATH`, preferring `docker`)
+
+## configuration
+
+no `.env` file, ever - config comes from real environment variables, and
+local defaults already cover the common case (see any `envDefault` tag under
+`internal/lib/config`). local-only values (like the compose stack's database
+credentials) are hardcoded directly where they're used, since they're not
+secrets. for anything that actually is one, inject it at invocation time
+(e.g. `op run -- make run`) - nothing secret should ever touch disk.
+
+## tests
+
+```
+make test-unit         # ./internal/...
+make test-integration  # ./tests/...
+make test-lint         # golangci-lint
+make test-smoke        # build+run the real binary, curl it, stop it
+```
