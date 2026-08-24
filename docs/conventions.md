@@ -69,6 +69,17 @@ contract a client reads, not an implementation detail of the Go package
 that happens to generate code from it; `internal/svc/<service>/api/` stays
 Go-only (the codegen config, generated types, and handlers).
 
+**errors are catalog entries, not inline literals.** every distinct error
+is a `Definition` (code, name, message, status) in one registry
+(`internal/lib/rest/transport/errors/registry.go`), looked up by code -
+never a `BaseError{...}` struct literal hand-typed at each call site. codes
+are `ERR_HYRULE_NNN`, numbered by range per domain, shaped after
+[ngrok's error reference](https://ngrok.com/docs/errors/reference): stable
+enough to depend on, one code per class of failure. the registry is
+hand-written today; the shape is what a generator would emit from a config
+file, and a docs page per code, are both deliberately deferred - this is
+the record-keeping start, not the full system.
+
 ## URL structure & versioning
 
 ```

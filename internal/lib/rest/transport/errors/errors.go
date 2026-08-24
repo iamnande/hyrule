@@ -3,24 +3,12 @@ package errors
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/iamnande/hyrule/internal/lib/rest/transport/validation"
 	"github.com/iamnande/hyrule/internal/lib/tracing"
 	"github.com/iamnande/hyrule/internal/lib/version"
 )
-
-type ErrorCode string
-
-const (
-	ErrorCodeInternal   ErrorCode = "internal"
-	ErrorCodeBadRequest ErrorCode = "bad-request"
-)
-
-func (code ErrorCode) String() string {
-	return fmt.Sprintf("api.%s.local/errors/%s", version.ServicePrefix, string(code))
-}
 
 type AttributeSource string
 
@@ -92,26 +80,30 @@ func (invalidAttribute InvalidAttribute) String() string {
 	)
 }
 
-func NewInternalServerError(ctx context.Context, err error) *BaseError {
+// newError looks up code's Definition in the registry and builds the
+// per-request shell around it - constructors below only attach what's
+// specific to this call (the wrapped error, the invalid attributes).
+func newError(ctx context.Context, code ErrorCode) *BaseError {
+	def := registry[code]
 	return &BaseError{
-		Code:          ErrorCodeInternal,
-		Name:          "Internal Server Error",
-		Message:       "We seem to be having some trouble. Please notify support and provide the operation ID. We'll get right on it.",
-		OperationID:   extractTraceIDFromContext(ctx),
-		StatusCode:    http.StatusInternalServerError,
-		InternalError: err,
+		Code:        def.Code,
+		Name:        def.Name,
+		Message:     def.Message,
+		StatusCode:  def.StatusCode,
+		OperationID: extractTraceIDFromContext(ctx),
 	}
 }
 
+func NewInternalServerError(ctx context.Context, err error) *BaseError {
+	base := newError(ctx, ErrorCodeInternal)
+	base.InternalError = err
+	return base
+}
+
 func NewBadRequestError(ctx context.Context, invalidAttributes ...InvalidAttribute) *BaseError {
-	return &BaseError{
-		Code:              ErrorCodeBadRequest,
-		Name:              "Bad Request",
-		Message:           "The request you made was invalid. Please check the input and try again.",
-		OperationID:       extractTraceIDFromContext(ctx),
-		InvalidAttributes: invalidAttributes,
-		StatusCode:        http.StatusBadRequest,
-	}
+	base := newError(ctx, ErrorCodeBadRequest)
+	base.InvalidAttributes = invalidAttributes
+	return base
 }
 
 func extractTraceIDFromContext(ctx context.Context) string {
