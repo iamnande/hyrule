@@ -1,0 +1,37 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - revive
+    - unconvert
+    - unparam
+    - gocritic
+    - misspell
+    - nolintlint
+    - errorlint
+    - exhaustive
+    - gosec
+    - bodyclose
+  settings:
+    revive:
+      rules:
+        # doc comments on every exported symbol fights this repo's own
+        # comment philosophy (see AGENTS.md/docs/style.md) - a comment is
+        # for non-obvious "why", not a godoc mandate.
+        - name: exported
+          disabled: true
+  exclusions:
+    generated: strict
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/iamnande/hyrule

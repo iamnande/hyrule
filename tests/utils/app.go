@@ -3,7 +3,7 @@ package utils
 import (
 	"net/http"
 
-	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 
@@ -34,7 +34,7 @@ func constructTestAPI(appOptions []fx.Option, opts ...fx.Option) TestAPI {
 	options = append(options, opts...)
 	options = append(options, fx.Populate(&t))
 
-	app := fxtest.New(GinkgoT(), options...)
+	app := fxtest.New(ginkgo.GinkgoT(), options...)
 	app.RequireStart()
 
 	if t.H == nil {

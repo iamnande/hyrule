@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	apiErrors "github.com/iamnande/hyrule/internal/lib/rest/transport/errors"
 	"github.com/iamnande/hyrule/internal/lib/logging"
+	apiErrors "github.com/iamnande/hyrule/internal/lib/rest/transport/errors"
 	"github.com/iamnande/hyrule/internal/lib/tracing"
 )
 

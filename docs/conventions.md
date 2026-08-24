@@ -273,15 +273,14 @@ feat(*)!: new hyrule, who dis
 
 ## already in practice, worth continuing deliberately
 
-errors wrapped with `%w` and enough context to debug without a stack trace;
-structured logging via `slog`; sentry spans around domain-level operations.
-none of this is enforced by tooling yet, so it's easy to drift from without
+errors wrapped with `%w` and enough context to debug without a stack trace
+(`errorlint` catches the worst drift here - see `.golangci.yml`); structured
+logging via `slog`; sentry spans around domain-level operations. the latter
+two aren't enforced by tooling yet, so it's easy to drift from without
 noticing - this is the reminder.
 
 ## known gaps
 
-- no committed `.golangci.yml` - `test-lint` runs default rules by accident,
-  not a chosen ruleset.
 - no CI - `test-unit`/`test-integration`/`test-lint` all run locally, on
   faith.
 - `golangci-lint`, `golang-migrate`, and `sqlc` aren't provisioned by `make

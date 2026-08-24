@@ -95,7 +95,7 @@ func dependencyChecksHandler(cfg *config) http.HandlerFunc {
 				if err = dependency.check(ctx); err == nil {
 					status.Status = DependencyStatusUp
 				}
-				dependencyChecks.Store(dependency.name, status)
+				statusTracker.Store(dependency.name, status)
 				tracing.SetTag(ctx, fmt.Sprintf("dependencies.%s.status", dependency.name), status.Status.String())
 			}(checkCtx, &dependencyChecks, check)
 		}
