@@ -23,14 +23,14 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
 
 FROM gcr.io/distroless/base-debian12@sha256:94d5278016c07e4e328da0a983823b92a2341df326d59de3408b8c6fd50bb4b3
 
-USER nonroot
-COPY --from=build --chown=nonroot:nonroot /bin/${SERVICE_NAME} /service
-
 ARG SERVICE_NAME
 ARG PROJECT_COMMIT
 ARG PROJECT_VERSION
 ARG PROJECT_REPO_URL
 ARG BUILD_DATETIME
+
+USER nonroot
+COPY --from=build --chown=nonroot:nonroot /bin/${SERVICE_NAME} /service
 
 ENV PROJECT_COMMIT=${PROJECT_COMMIT}
 ENV PROJECT_VERSION=${PROJECT_VERSION}
