@@ -20,16 +20,11 @@ func Start(ctx context.Context) (context.Context, func()) {
 	return StartNamed(ctx, name)
 }
 
-// StartNamed begins a span with an explicit static name - for the rare case
-// where the name isn't data-dependent but still can't be the calling
-// function's name (see StartNamedf for the data-dependent case).
 func StartNamed(ctx context.Context, name string) (context.Context, func()) {
 	span := sentry.StartSpan(ctx, name)
 	return span.Context(), span.Finish
 }
 
-// StartNamedf is StartNamed with the name built via fmt.Sprintf - for one
-// span per item in a loop (e.g. "dependencies.check.%s" per dependency).
 func StartNamedf(ctx context.Context, format string, args ...any) (context.Context, func()) {
 	return StartNamed(ctx, fmt.Sprintf(format, args...))
 }

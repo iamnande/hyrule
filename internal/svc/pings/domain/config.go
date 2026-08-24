@@ -11,8 +11,6 @@ import (
 )
 
 type Config struct {
-	// StaleAfter is how long since a name's last ping before it reads as
-	// State: stale instead of up.
 	StaleAfter time.Duration `env:"STALE_AFTER" envDefault:"5m"`
 }
 

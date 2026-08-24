@@ -20,12 +20,10 @@ type HealthAPIResult struct {
 type HealthAPIParams struct {
 	fx.In
 
-	Logger     *slog.Logger
-	Deployment config.Deployment
-	Service    version.ServiceInfo
-	Probes     health.Probes
-	// Dependencies are contributed by whatever a service actually depends
-	// on (e.g. internal/lib/database) - this package stays domain-free.
+	Logger       *slog.Logger
+	Deployment   config.Deployment
+	Service      version.ServiceInfo
+	Probes       health.Probes
 	Dependencies []health.Option `group:"healthDependencies"`
 }
 

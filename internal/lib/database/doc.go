@@ -1,3 +1,2 @@
-// Package database provides the shared pgx pool and the transaction+GUC
-// hook every repository call goes through - see docs/conventions.md#data-layer.
+// Package database provides NewPool and WithTx.
 package database

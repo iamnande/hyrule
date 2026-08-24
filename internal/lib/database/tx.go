@@ -10,13 +10,6 @@ import (
 
 type TxFn func(ctx context.Context, tx pgx.Tx) error
 
-// WithTx runs fn inside a transaction, committing on success and rolling
-// back on error or panic. every repository call goes through this, even a
-// single SELECT - RLS policies key off session GUCs (SET LOCAL
-// app.account_id = ...) that only live for the current transaction, so this
-// is also where that gets set. setGUCs is a no-op today since no policy
-// exists yet; the point is that adding one later means touching this one
-// function, not every call site.
 func WithTx(ctx context.Context, pool *pgxpool.Pool, fn TxFn) (err error) {
 	tx, err := pool.Begin(ctx)
 	if err != nil {

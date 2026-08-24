@@ -13,9 +13,6 @@ type HealthCheckResult struct {
 	Option health.Option `group:"healthDependencies"`
 }
 
-// NewHealthCheck registers the pool as a hard dependency on /healthz - a
-// direct pgx ping, not an interface over the backend, since there's exactly
-// one backend to support.
 func NewHealthCheck(pool *pgxpool.Pool) HealthCheckResult {
 	return HealthCheckResult{
 		Option: health.WithHardDependency("database", pool.Ping),

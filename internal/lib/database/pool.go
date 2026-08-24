@@ -19,10 +19,6 @@ type Params struct {
 	Config config.Database
 }
 
-// NewPool builds the pgx pool every repository shares. pgxpool.New doesn't
-// block on connecting, so this pings once on startup - an unreachable
-// database fails loud at boot instead of on the first query (see
-// docs/conventions.md#probes: this is what startup answers).
 func NewPool(params Params) (*pgxpool.Pool, error) {
 	poolConfig, err := pgxpool.ParseConfig(params.Config.DSN())
 	if err != nil {

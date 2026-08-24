@@ -26,7 +26,6 @@ type BaseError struct {
 	OperationID       string             `json:"operation_id"`
 	InvalidAttributes []InvalidAttribute `json:"invalid_attributes,omitempty"`
 
-	// not marshalled, used for response/logging
 	StatusCode    int   `json:"-"`
 	InternalError error `json:"-"`
 }
@@ -80,9 +79,6 @@ func (invalidAttribute InvalidAttribute) String() string {
 	)
 }
 
-// newError looks up code's Definition in the registry and builds the
-// per-request shell around it - constructors below only attach what's
-// specific to this call (the wrapped error, the invalid attributes).
 func newError(ctx context.Context, code ErrorCode) *BaseError {
 	def := registry[code]
 	return &BaseError{
