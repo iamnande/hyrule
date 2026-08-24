@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pings
+description: hyrule's pings service - a lightweight app/service/host registry
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

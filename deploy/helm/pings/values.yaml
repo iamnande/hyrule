@@ -1,0 +1,29 @@
+image:
+  repository: iamnande/pings
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+# each key is rendered as env var HYRULE_<key>
+env:
+  HTTP_SERVER_ADDR: ":8000"
+  REGION: us-east-2
+  ENVIRONMENT: dev
+  DATABASE_HOST: pings-postgres
+  DATABASE_PORT: "5432"
+  DATABASE_USER: hyrule_app
+  DATABASE_PASSWORD: hyrule_app
+  DATABASE_NAME: hyrule
+  DATABASE_SSL_MODE: disable
+  PINGS_STALE_AFTER: 5m

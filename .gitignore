@@ -2,5 +2,6 @@
 *.pem
 build
 coverage
+.cluster
 .gitignore
 .idea

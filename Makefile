@@ -37,6 +37,7 @@ help: ## display this help screen
 
 include mk/bootstrap.mk
 include mk/build.mk
+include mk/cluster.mk
 include mk/database.mk
 include mk/run.mk
 include mk/test.mk
