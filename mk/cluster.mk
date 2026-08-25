@@ -17,3 +17,8 @@ cluster-status: ## cluster: show local cluster + workload status
 .PHONY: dev
 dev: ## cluster: run the tilt dev loop against the local cluster
 	@PATH="$$PATH:$(RD_BIN_DIR)" tilt up
+
+.PHONY: helm-vendor
+helm-vendor: ## cluster: re-vendor app-platform's chart dependencies (run after editing deploy/helm/app or deploy/helm/platform)
+	@echo $(PROJECT_LOG_FMT) "vendoring app-platform chart dependencies"
+	@helm dependency build deploy/helm/app-platform

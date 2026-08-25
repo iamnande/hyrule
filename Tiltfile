@@ -47,5 +47,5 @@ local_resource(
     labels=['data'],
 )
 
-k8s_yaml(helm('deploy/helm/pings', name='pings'))
+k8s_yaml(helm('deploy/helm/app-platform', name='pings', values=['deploy/values/pings/values.yaml']))
 k8s_resource('pings', resource_deps=['pings-migrate'], port_forwards='8000:8000', labels=['pings'])

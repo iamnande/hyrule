@@ -1,0 +1,6 @@
+apiVersion: v2
+name: platform
+description: hyrule-internal plumbing - never deployed standalone, composed via app-platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

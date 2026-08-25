@@ -1,0 +1,27 @@
+{{- if or (include "app.hasSettings" .) .Values.configMapFiles }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-config
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+data:
+  {{- if include "app.hasSettings" . }}
+  {{- $settings := merge ((.Values.global).runtimeSettings | default dict) (.Values.runtimeSettings | default dict) }}
+  "{{ include "app.fullname" . }}.yml": |-
+    {{- $settings | mustToPrettyJson | nindent 4 }}
+  {{- end }}
+  {{- range $name, $content := .Values.configMapFiles }}
+  {{ $name }}: |-
+    {{- $content | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- range .Values.extraConfigMaps }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+data:
+  {{- toYaml .data | nindent 2 }}
+{{- end }}

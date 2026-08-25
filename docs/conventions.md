@@ -353,22 +353,29 @@ jobs (`lint`, `unit`, `integration`, `smoke`).
 
 [0003-runtime](decisions/0003-runtime.md) (k3s) +
 [0004-local-cluster](decisions/0004-local-cluster.md) (Rancher Desktop) +
-0002's Helm/Tilt legs. `make cluster-up` / `cluster-down` / `cluster-status`
-/ `dev` (runs `tilt up`) - see [Tiltfile](../Tiltfile) and
+[0005-helm-chart-split](decisions/0005-helm-chart-split.md) (app +
+platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
+/ `dev` (runs `tilt up`) / `helm-vendor` - see [Tiltfile](../Tiltfile) and
 [deploy/](../deploy).
 
-- **chart lives at `deploy/helm/<service>`**, mirroring `api/<service>` -
-  non-Go artifacts get their own top-level tree, not a home under
-  `internal/svc/<service>`.
+- **one generic chart (`deploy/helm/app`) serves every service** - no
+  per-service chart. a new service adds a `deploy/values/<service>/
+  values.yaml`, not a new chart directory. `deploy/helm/platform` holds
+  org-internal plumbing (near-empty today), `deploy/helm/app-platform`
+  wraps both - see 0005 for the full shape and why.
+- **`deploy/helm/app-platform/charts/*.tgz` and `Chart.lock` are
+  committed, vendored artifacts** - run `make helm-vendor` after editing
+  `app` or `platform` and commit the result, same as any other
+  generated-and-committed output in this repo.
 - **`deploy/local/postgres.yaml` is dev-only** - ephemeral storage, no
   chart, reuses `docker/postgres/init/01-app-role.sql` verbatim (the
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
   postgres should run.
-- **Helm chart env vars are DB-agnostic by convention** - `values.yaml`'s
-  `env` map keys are rendered as `HYRULE_<KEY>` in the Deployment, one
-  source of truth for the `internal/lib/config` env tags each service
-  already reads.
+- **`app`'s `env` map has no prefix magic** - keys are the literal env
+  var names. pings' own values file writes `HYRULE_DATABASE_HOST` etc.
+  in full; the chart itself has no opinion on any service's env var
+  naming convention.
 - **Rancher Desktop runs in containerd mode, not dockerd/moby** - matches
   k3s's own embedded runtime. the [Tiltfile](../Tiltfile) uses the
   `ext://nerdctl` extension's `nerdctl_build` (Tilt's own documented path
@@ -388,3 +395,6 @@ jobs (`lint`, `unit`, `integration`, `smoke`).
   dependency, invoked as `go tool oapi-codegen`.
 - [docs/style.md](style.md)'s consumer-defined-interfaces rule isn't
   linted - nothing stops a producer-side interface from creeping in.
+- the `app` Helm chart has no `values.schema.json`/generated `README.md`
+  and no `helm-unittest` suites yet - see
+  [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).

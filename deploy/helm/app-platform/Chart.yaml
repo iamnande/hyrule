@@ -1,0 +1,15 @@
+apiVersion: v2
+name: app-platform
+description: wrapper chart composing app + platform into a single release
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - alias: app
+    name: app
+    version: 0.1.0
+    repository: file://../app
+  - alias: platform
+    name: platform
+    version: 0.1.0
+    repository: file://../platform

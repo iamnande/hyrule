@@ -1,0 +1,60 @@
+global:
+  image:
+    registry: ""
+  imagePullSecrets: []
+  runtimeSettings: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+# deployment | statefulset | daemonset | job | cronjob
+mode: deployment
+
+image:
+  registry: ""
+  repository: ""
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8000
+
+probes:
+  startup:
+    enabled: true
+    path: /startupz
+  liveness:
+    enabled: true
+    path: /livez
+  readiness:
+    enabled: true
+    path: /readyz
+
+resources: {}
+
+env: {}
+extraEnv: []
+extraEnvFrom: []
+
+extraVolumes: []
+extraVolumeMounts: []
+additionalContainers: []
+initContainers: []
+additionalServices: []
+
+runtimeSettings: {}
+configMapFiles: {}
+extraConfigMaps: []
+
+rbac:
+  role:
+    extraRules: []

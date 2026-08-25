@@ -1,0 +1,30 @@
+app:
+  fullnameOverride: pings
+
+  image:
+    repository: iamnande/pings
+    tag: latest
+
+  service:
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+  env:
+    HYRULE_HTTP_SERVER_ADDR: ":8000"
+    HYRULE_REGION: us-east-2
+    HYRULE_ENVIRONMENT: dev
+    HYRULE_DATABASE_HOST: pings-postgres
+    HYRULE_DATABASE_PORT: "5432"
+    HYRULE_DATABASE_USER: hyrule_app
+    HYRULE_DATABASE_PASSWORD: hyrule_app
+    HYRULE_DATABASE_NAME: hyrule
+    HYRULE_DATABASE_SSL_MODE: disable
+    HYRULE_PINGS_STALE_AFTER: 5m
+
+platform: {}

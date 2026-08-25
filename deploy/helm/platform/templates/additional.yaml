@@ -1,0 +1,4 @@
+{{- range .Values.additionalK8sObjects }}
+---
+{{- toYaml . }}
+{{- end }}
