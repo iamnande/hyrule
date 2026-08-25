@@ -372,10 +372,12 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
   postgres should run.
-- **`app`'s `env` map has no prefix magic** - keys are the literal env
-  var names. pings' own values file writes `HYRULE_DATABASE_HOST` etc.
-  in full; the chart itself has no opinion on any service's env var
-  naming convention.
+- **every service takes config through env vars, full stop** - `app` has
+  no mechanism for mounting a config file into a pod. `env` map keys are
+  the literal env var names (no prefix magic; pings' own values file
+  writes `HYRULE_DATABASE_HOST` etc. in full - the chart has no opinion
+  on any service's naming convention). see
+  [0005-helm-chart-split](decisions/0005-helm-chart-split.md#config-env-vars-only-no-config-files).
 - **Rancher Desktop runs in containerd mode, not dockerd/moby** - matches
   k3s's own embedded runtime. the [Tiltfile](../Tiltfile) uses the
   `ext://nerdctl` extension's `nerdctl_build` (Tilt's own documented path

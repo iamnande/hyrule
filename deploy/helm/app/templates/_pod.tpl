@@ -2,10 +2,6 @@
 metadata:
   labels:
     {{- include "app.selectorLabels" . | nindent 4 }}
-  {{- if include "app.hasSettings" . }}
-  annotations:
-    config-hash-{{ include "app.fullname" . }}: {{ merge ((.Values.global).runtimeSettings | default dict) (.Values.runtimeSettings | default dict) | toYaml | sha256sum }}
-  {{- end }}
 spec:
   serviceAccountName: {{ include "app.serviceAccountName" . }}
   {{- with .Values.imagePullSecrets | default (.Values.global).imagePullSecrets }}
@@ -20,11 +16,6 @@ spec:
     - name: {{ include "app.name" . }}
       image: {{ include "app.image" . }}
       imagePullPolicy: {{ .Values.image.pullPolicy }}
-      {{- if include "app.hasSettings" . }}
-      args:
-        - "--config"
-        - "/app/conf/{{ include "app.fullname" . }}.yml"
-      {{- end }}
       ports:
         - name: http
           containerPort: {{ .Values.service.port }}
@@ -64,28 +55,15 @@ spec:
       {{- end }}
       resources:
         {{- toYaml .Values.resources | nindent 8 }}
-      {{- if or (include "app.hasSettings" .) .Values.extraVolumeMounts }}
+      {{- with .Values.extraVolumeMounts }}
       volumeMounts:
-        {{- if include "app.hasSettings" . }}
-        - name: config
-          mountPath: /app/conf
-        {{- end }}
-        {{- with .Values.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
       {{- end }}
     {{- with .Values.additionalContainers }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- if or (include "app.hasSettings" .) .Values.extraVolumes }}
+  {{- with .Values.extraVolumes }}
   volumes:
-    {{- if include "app.hasSettings" . }}
-    - name: config
-      configMap:
-        name: {{ include "app.fullname" . }}-config
-    {{- end }}
-    {{- with .Values.extraVolumes }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
   {{- end }}
 {{- end -}}

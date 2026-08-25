@@ -2,7 +2,6 @@ global:
   image:
     registry: ""
   imagePullSecrets: []
-  runtimeSettings: {}
 
 nameOverride: ""
 fullnameOverride: ""
@@ -50,10 +49,6 @@ extraVolumeMounts: []
 additionalContainers: []
 initContainers: []
 additionalServices: []
-
-runtimeSettings: {}
-configMapFiles: {}
-extraConfigMaps: []
 
 rbac:
   role:

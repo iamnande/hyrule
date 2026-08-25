@@ -29,9 +29,8 @@ artifact in this repo.
 `app`: workload (`mode: deployment` today - `job`/`statefulset`/etc. are
 placeholders in the values shape, not templates; add one when a real
 service needs it, following the shared `app.pod` partial), Service,
-ServiceAccount, RBAC, probes, resources, env, and the dynamic settings
-mechanism below. nothing in here should ever need to know it's running
-in homelab specifically.
+ServiceAccount, RBAC, probes, resources, env. nothing in here should
+ever need to know it's running in homelab specifically.
 
 `platform`: intentionally near-empty right now.
 [docs/conventions.md#config](../conventions.md#config) already says
@@ -40,27 +39,22 @@ backend, and homelab has no self-hosted CRDs to wrap yet - so this
 chart is just an `additionalK8sObjects` escape hatch until one shows
 up. when it does, it goes here, never in `app`.
 
-## dynamic settings injection
+## config: env vars only, no config files
 
-`app`'s `runtimeSettings` (plus `global.runtimeSettings` for
-environment-wide defaults) gets merged and dumped as one JSON blob into a
-ConfigMap, mounted at `/app/conf/<fullname>.yml`, wired in as `--config`
-only when non-empty - and a `config-hash-<fullname>` pod annotation
-forces a rollout on change. the chart never parses or validates the
-blob; that's each service's own config-loading code's job.
+`app` has no mechanism for mounting a config file into a pod - no
+ConfigMap-backed settings blob, no `--config` flag, nothing. every
+service's config comes in through `app`'s plain `env` map (literal env
+var names, no prefix magic - `app` has no opinion on any service's
+naming convention) plus `extraEnv`/`extraEnvFrom` for anything raw.
+pings already works this way (`internal/lib/config`, `HYRULE_*`); this
+makes it the only way, not just the default.
 
-pings doesn't use this - its config is pure env vars
-(`internal/lib/config`, `HYRULE_*`), wired through `app`'s plain `env`
-map instead (literal env var names, no prefix magic - `app` has no
-opinion on any service's naming convention). the settings mechanism
-exists for a future service whose config doesn't fit env vars, without
-needing a chart change to onboard it.
-
-skips re-running individual settings leaves back through Helm's `tpl`
-function before serializing - that only pays off once a service's
-settings need a value resolved at render time (a namespace, a release
-name), and nothing does yet. add it the same way `runtimeSettings`
-itself was added, when a real service needs it.
+an earlier version of this chart carried a dynamic settings mechanism
+(merge a `runtimeSettings` map, serialize it to JSON, mount it, pass
+`--config`) for services whose config might not fit env vars. dropped
+before any service used it - config files invite drift between what's
+in the mounted file and what's actually running, in a way a rollout
+triggered by an env var change doesn't.
 
 ## deliberately deferred
 

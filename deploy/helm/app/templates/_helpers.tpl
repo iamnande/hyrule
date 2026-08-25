@@ -47,7 +47,3 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
 {{- end -}}
-
-{{- define "app.hasSettings" -}}
-{{- if or .Values.runtimeSettings (.Values.global).runtimeSettings }}true{{- end }}
-{{- end -}}
