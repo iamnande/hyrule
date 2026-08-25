@@ -47,14 +47,10 @@ service's config comes in through `app`'s plain `env` map (literal env
 var names, no prefix magic - `app` has no opinion on any service's
 naming convention) plus `extraEnv`/`extraEnvFrom` for anything raw.
 pings already works this way (`internal/lib/config`, `HYRULE_*`); this
-makes it the only way, not just the default.
-
-an earlier version of this chart carried a dynamic settings mechanism
-(merge a `runtimeSettings` map, serialize it to JSON, mount it, pass
-`--config`) for services whose config might not fit env vars. dropped
-before any service used it - config files invite drift between what's
-in the mounted file and what's actually running, in a way a rollout
-triggered by an env var change doesn't.
+makes it the only way, not just the default: a config file mounted from
+a ConfigMap can drift from what's actually running in a way an env var
+change can't - it only takes effect on the next rollout, same as env,
+but nothing forces the rollout the way a changed pod spec does.
 
 ## deliberately deferred
 
