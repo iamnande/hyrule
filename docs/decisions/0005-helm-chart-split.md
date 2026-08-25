@@ -1,20 +1,22 @@
-# 0005: one generic chart + a platform chart + a wrapper, not one chart per service
+# 0005: one generic chart + a homelab-plumbing chart + a wrapper, not one chart per service
 
-adapted from an external convention doc the user provided (app/platform
-split with dynamic settings injection) - not hyrule-specific in origin,
-but the shape fits: homelab will eventually run many services, each
-needing the same boilerplate (Deployment, probes, resources, RBAC) plus
-whatever org-specific plumbing shows up later (secrets, internal CRDs).
-one chart per service means drift; one giant chart means org plumbing
-leaks into what should be portable.
+homelab will eventually run many services on top of hyrule's pattern,
+each needing the same boilerplate (Deployment, probes, resources, RBAC)
+plus whatever homelab-specific plumbing shows up later (a secrets
+backend, self-hosted CRDs like a VPN operator or a cert-manager issuer).
+one chart per service means drift between services that all want the
+same shape; one giant chart means homelab-specific plumbing leaks into
+what should be a portable, reusable app shape. splitting the two and
+gluing them with a thin wrapper avoids both.
 
 ## topology
 
-`deploy/helm/app` (generic, zero org assumptions) +
-`deploy/helm/platform` (org-internal plumbing) +
-`deploy/helm/app-platform` (thin wrapper, aliases both as dependencies).
-per-service values move to `deploy/values/<service>/values.yaml`, using
-only the two wrapper keys (`app:`, `platform:`).
+`deploy/helm/app` (generic - no homelab-specific assumptions, could be
+lifted into any k8s project as-is) + `deploy/helm/platform` (homelab
+integration plumbing) + `deploy/helm/app-platform` (thin wrapper,
+aliases both as dependencies). per-service values move to
+`deploy/values/<service>/values.yaml`, using only the two wrapper keys
+(`app:`, `platform:`).
 
 `app-platform`'s dependencies are vendored, not resolved from a chart
 repo at deploy time - `make helm-vendor` runs `helm dependency build`;
@@ -28,15 +30,15 @@ artifact in this repo.
 placeholders in the values shape, not templates; add one when a real
 service needs it, following the shared `app.pod` partial), Service,
 ServiceAccount, RBAC, probes, resources, env, and the dynamic settings
-mechanism below. everything here should be safe to hand to an external
-party with zero hyrule-specific assumptions leaking in.
+mechanism below. nothing in here should ever need to know it's running
+in homelab specifically.
 
 `platform`: intentionally near-empty right now.
 [docs/conventions.md#config](../conventions.md#config) already says
 secrets are injected at invocation time, not via a k8s-native secret
-backend, and there are no internal CRDs yet - so this chart is just an
-`additionalK8sObjects` escape hatch until a real integration exists.
-when one does, it goes here, never in `app`.
+backend, and homelab has no self-hosted CRDs to wrap yet - so this
+chart is just an `additionalK8sObjects` escape hatch until one shows
+up. when it does, it goes here, never in `app`.
 
 ## dynamic settings injection
 
@@ -54,11 +56,11 @@ opinion on any service's naming convention). the settings mechanism
 exists for a future service whose config doesn't fit env vars, without
 needing a chart change to onboard it.
 
-simplified from the source doc: skipped the per-leaf `tpl` re-templating
-step (source doc's version re-runs specific map values through Helm's
-template engine before serializing) since it assumes a `services`
-sub-map schema hyrule doesn't have. add it back the same way if a real
-service's settings need render-time templating.
+skips re-running individual settings leaves back through Helm's `tpl`
+function before serializing - that only pays off once a service's
+settings need a value resolved at render time (a namespace, a release
+name), and nothing does yet. add it the same way `runtimeSettings`
+itself was added, when a real service needs it.
 
 ## deliberately deferred
 

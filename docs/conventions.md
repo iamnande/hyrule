@@ -361,7 +361,7 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - **one generic chart (`deploy/helm/app`) serves every service** - no
   per-service chart. a new service adds a `deploy/values/<service>/
   values.yaml`, not a new chart directory. `deploy/helm/platform` holds
-  org-internal plumbing (near-empty today), `deploy/helm/app-platform`
+  homelab integration plumbing (near-empty today), `deploy/helm/app-platform`
   wraps both - see 0005 for the full shape and why.
 - **`deploy/helm/app-platform/charts/*.tgz` and `Chart.lock` are
   committed, vendored artifacts** - run `make helm-vendor` after editing
