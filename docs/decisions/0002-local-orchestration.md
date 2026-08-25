@@ -1,21 +1,12 @@
-# 0002: local orchestration - kind + Helm + Tilt
+# 0002: local orchestration - Helm + Tilt
 
 phase two (per the roadmap) is standing up a real dev loop against a local
 cluster, once there's a service worth orchestrating (there is now - pings
-has a real endpoint and a real postgres dependency). three separate
-choices bundled under one decision since they only make sense together.
+has a real endpoint and a real postgres dependency).
 
-## local cluster: kind, not k3d/minikube/Docker Desktop
-
-`kind` runs actual upstream Kubernetes in Docker; `k3d` runs `k3s`
-(Rancher's stripped-down distribution) in Docker - faster and lighter, but
-not the same Kubernetes underneath (different defaults for storage,
-networking, some APIs). hyrule's whole point is being the reference
-implementation homelab's real services copy - fidelity to what a real
-cluster actually does matters more here than the speed difference, and
-`kind` is the vanilla, first-party (k8s SIG), most-documented option.
-minikube and Docker Desktop's built-in cluster are heavier and less
-scriptable for CI-adjacent use than either.
+**local cluster choice moved to [0003](0003-runtime.md) /
+[0004](0004-local-cluster.md)** - originally decided as `kind` here, since
+superseded now that homelab's prod runtime is k3s, not vanilla k8s.
 
 ## chart format: Helm, not Kustomize
 
@@ -45,22 +36,3 @@ deploy.
 whether `homelab` itself runs a GitOps controller (Argo CD/Flux) on top of
 these charts - that's homelab's own concern, out of scope for what hyrule
 needs to prove locally.
-
-## addendum: kind's podman provider
-
-implementing this surfaced a real, 5-year-old open upstream gap: `kind
-load docker-image` (what Tilt uses to push locally-built images into the
-cluster) is hardcoded to shell out to a binary literally named `docker`,
-even with `KIND_EXPERIMENTAL_PROVIDER=podman` set. this repo's container
-engine is podman (no `docker` binary installed), so this bit immediately.
-
-reconsidered the choice rather than just working around it - checked
-k3d (podman support is equally labeled experimental, not more mature)
-and Podman Desktop's Kind/Minikube extensions (same underlying `kind` +
-podman pairing, just GUI-wrapped, not a different technology; podman's
-own `kube play` isn't a real cluster - no load balancing, PVs, or network
-policies). none of those alternatives remove the gap, so `kind` stands.
-fix in place: `make cluster-up` symlinks `docker` -> `podman` into a
-repo-local `.cluster/bin`, the same workaround kind's own maintainers
-point to. see [conventions.md#local-orchestration](../conventions.md#local-orchestration)
-for the full mechanics.

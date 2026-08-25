@@ -351,15 +351,16 @@ jobs (`lint`, `unit`, `integration`, `smoke`).
 
 ## local orchestration
 
-[0002-local-orchestration](decisions/0002-local-orchestration.md): `kind` +
-Helm + Tilt. `make cluster-up` / `cluster-down` / `cluster-status` / `dev`
-(runs `tilt up`) - see [Tiltfile](../Tiltfile) and
+[0003-runtime](decisions/0003-runtime.md) (k3s) +
+[0004-local-cluster](decisions/0004-local-cluster.md) (Rancher Desktop) +
+0002's Helm/Tilt legs. `make cluster-up` / `cluster-down` / `cluster-status`
+/ `dev` (runs `tilt up`) - see [Tiltfile](../Tiltfile) and
 [deploy/](../deploy).
 
 - **chart lives at `deploy/helm/<service>`**, mirroring `api/<service>` -
   non-Go artifacts get their own top-level tree, not a home under
   `internal/svc/<service>`.
-- **`deploy/kind/postgres.yaml` is dev-only** - ephemeral storage, no
+- **`deploy/local/postgres.yaml` is dev-only** - ephemeral storage, no
   chart, reuses `docker/postgres/init/01-app-role.sql` verbatim (the
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
@@ -368,26 +369,14 @@ Helm + Tilt. `make cluster-up` / `cluster-down` / `cluster-status` / `dev`
   `env` map keys are rendered as `HYRULE_<KEY>` in the Deployment, one
   source of truth for the `internal/lib/config` env tags each service
   already reads.
-- **`kind`'s podman provider requires a `docker` shim** - `kind load
-  docker-image` (what Tilt uses to push locally-built images into the
-  cluster) is hardcoded to shell out to a binary literally named `docker`,
-  even with `KIND_EXPERIMENTAL_PROVIDER=podman` set - a 5-year-old open
-  upstream gap, not something fixable from this repo. `make cluster-up`
-  symlinks `docker` -> `podman` into `.cluster/bin` (gitignored,
-  repo-local) and prepends it to `PATH` for `make dev`. considered
-  switching to real Docker or k3d instead; k3d's podman support is
-  equally experimental, and Podman Desktop's Kind/Minikube extensions run
-  the same underlying `kind`+podman pairing under a GUI - neither
-  sidesteps this, so the symlink workaround (the same one kind's own
-  maintainers point to) stays.
-- **Tilt's `docker_build` needs `DOCKER_HOST` pointed at podman's
-  Docker-API-compatible socket, and `DOCKER_BUILDKIT=0`** - podman's
-  compat API doesn't implement BuildKit's gRPC protocol, so builds fall
-  back to the classic build path. `make dev` derives the socket path from
-  `podman machine inspect` and sets both automatically.
-- when `CONTAINER_ENGINE` is `docker` (see root `Makefile`), none of the
-  above applies - `mk/cluster.mk` only sets the podman-specific env when
-  podman is the active engine.
+- **Rancher Desktop runs in containerd mode, not dockerd/moby** - matches
+  k3s's own embedded runtime. the [Tiltfile](../Tiltfile) uses the
+  `ext://nerdctl` extension's `nerdctl_build` (Tilt's own documented path
+  for this mode) in place of `docker_build` - same shape, different
+  backend, no separate image-load step since builds land directly in the
+  containerd store k3s already reads from.
+- **kubeconfig context is `rancher-desktop`** - created by the app itself,
+  nothing to check in.
 
 ## known gaps
 
