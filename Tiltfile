@@ -1,3 +1,5 @@
+load('ext://nerdctl', 'nerdctl_build')
+
 ORG_NAME = 'iamnande'
 SERVICE_NAME = 'pings'
 PROJECT_REPO_URL = 'github.com/iamnande/hyrule'
@@ -7,9 +9,9 @@ PROJECT_VERSION = str(read_file('VERSION')).strip()
 PROJECT_COMMIT = str(local('git rev-parse HEAD | cut -c1-8', quiet=True)).strip()
 BUILD_DATETIME = str(local('date -u +%Y-%m-%dT%H:%M:%SZ', quiet=True)).strip()
 
-docker_build(
-    '%s/%s' % (ORG_NAME, SERVICE_NAME),
-    '.',
+nerdctl_build(
+    ref='%s/%s' % (ORG_NAME, SERVICE_NAME),
+    context='.',
     dockerfile='cmd/Dockerfile',
     build_args={
         'ORG_NAME': ORG_NAME,
@@ -35,7 +37,7 @@ data:
 %s
 """ % init_sql_indented))
 
-k8s_yaml('deploy/kind/postgres.yaml')
+k8s_yaml('deploy/local/postgres.yaml')
 k8s_resource('pings-postgres', port_forwards='5432:5432', labels=['data'])
 
 local_resource(
