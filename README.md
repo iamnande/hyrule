@@ -18,7 +18,7 @@ make build       # compile pings for the local machine
 make run         # go run pings locally
 make image-build # build the pings container image
 make image-run   # run the built image locally
-make stack-up    # start the local dependency stack (docker-compose)
+make stack-up    # start the local dependency stack (see stack/compose.yml)
 make stack-down  # stop it
 make help        # everything else
 ```

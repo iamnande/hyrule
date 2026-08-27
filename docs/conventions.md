@@ -221,7 +221,7 @@ query got complex, then the abstraction fought back. instead:
   superusers unless `FORCE ROW LEVEL SECURITY` is set, and it's an easy trap
   to inherit from whatever role created the tables in local dev. locally
   that role is bootstrapped by
-  [docker/postgres/init](../docker/postgres/init) on first container start;
+  [stack/postgres/init](../stack/postgres/init) on first container start;
   migrations still run as the owner role (`POSTGRES_USER`, see
   `DATABASE_URL` in `mk/database.mk`).
 - entities that have an *owner* (account/workspace/user/team, when they
@@ -368,7 +368,7 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   `app` or `platform` and commit the result, same as any other
   generated-and-committed output in this repo.
 - **`deploy/local/postgres.yaml` is dev-only** - ephemeral storage, no
-  chart, reuses `docker/postgres/init/01-app-role.sql` verbatim (the
+  chart, reuses `stack/postgres/init/01-app-role.sql` verbatim (the
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
   postgres should run.

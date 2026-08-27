@@ -9,7 +9,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U hyrule_owner -d hyrule']
       interval: 2s

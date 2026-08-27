@@ -24,7 +24,7 @@ nerdctl_build(
     },
 )
 
-init_sql = read_file('docker/postgres/init/01-app-role.sql')
+init_sql = read_file('stack/postgres/init/01-app-role.sql')
 init_sql_indented = '\n'.join(['    ' + line for line in str(init_sql).splitlines()])
 
 k8s_yaml(blob("""
