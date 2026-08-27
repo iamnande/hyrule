@@ -1,0 +1,23 @@
+app:
+  fullnameOverride: iam-jwks-dp
+
+  image:
+    repository: iamnande/iam-jwks-dp
+    tag: latest
+
+  service:
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+  env:
+    HYRULE_HTTP_SERVER_ADDR: ":8000"
+    HYRULE_REGION: us-east-2
+    HYRULE_ENVIRONMENT: dev
+
+platform: {}

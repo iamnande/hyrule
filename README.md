@@ -8,6 +8,8 @@ working code. see [docs/architecture.md](docs/architecture.md) for the why.
 | service | entrypoint | what it does |
 |---|---|---|
 | `pings` | `cmd/pings` | a lightweight registry of homelab apps/services/hosts - a thing self-reports by pinging |
+| `iam-jwks-cp` | `cmd/iam-jwks-cp` | JSON Web Key Set for verifying JWTs (control plane) |
+| `iam-jwks-dp` | `cmd/iam-jwks-dp` | JSON Web Key Set for verifying JWTs (data plane) |
 
 ## running it
 
