@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pings-postgres
+  name: hyrule-database
   labels:
-    app.kubernetes.io/name: pings-postgres
+    app.kubernetes.io/name: hyrule-database
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: pings-postgres
+      app.kubernetes.io/name: hyrule-database
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: pings-postgres
+        app.kubernetes.io/name: hyrule-database
     spec:
       containers:
         - name: postgres
@@ -39,15 +39,15 @@ spec:
       volumes:
         - name: init
           configMap:
-            name: pings-postgres-init
+            name: hyrule-database-init
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: pings-postgres
+  name: hyrule-database
 spec:
   selector:
-    app.kubernetes.io/name: pings-postgres
+    app.kubernetes.io/name: hyrule-database
   ports:
     - name: postgres
       port: 5432

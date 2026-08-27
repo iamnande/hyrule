@@ -19,7 +19,7 @@ app:
     HYRULE_HTTP_SERVER_ADDR: ":8000"
     HYRULE_REGION: us-east-2
     HYRULE_ENVIRONMENT: dev
-    HYRULE_DATABASE_HOST: pings-postgres
+    HYRULE_DATABASE_HOST: hyrule-database
     HYRULE_DATABASE_PORT: "5432"
     HYRULE_DATABASE_USER: hyrule_app
     HYRULE_DATABASE_PASSWORD: hyrule_app

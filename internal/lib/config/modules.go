@@ -4,9 +4,8 @@ import (
 	"go.uber.org/fx"
 )
 
-var PingsModule = fx.Options(
+var BaseModule = fx.Options(
 	fx.Provide(LoadDeployment()),
 	fx.Provide(LoadTracing()),
 	fx.Provide(LoadHTTPServer()),
-	fx.Provide(LoadDatabase()),
 )

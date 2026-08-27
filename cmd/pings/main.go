@@ -12,7 +12,8 @@ import (
 func main() {
 	fx.New(
 		runtime.NewModule(app.Name),
-		config.PingsModule,
+		config.BaseModule,
+		fx.Provide(config.LoadDatabase()),
 		fx.Provide(domain.LoadConfig),
 		app.Module,
 	).Run()
