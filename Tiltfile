@@ -58,6 +58,6 @@ for slug in service_slugs:
     k8s_resource(
         slug,
         resource_deps=['migrate'] if needs_db else [],
-        port_forwards=8000,
+        port_forwards=port_forward(local_port=0, container_port=8000),
         labels=[slug],
     )

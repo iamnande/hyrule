@@ -20,6 +20,7 @@ make image-build # build the pings container image
 make image-run   # run the built image locally
 make stack-up    # start the local dependency stack (see stack/compose.yml)
 make stack-down  # stop it
+make new-service # scaffold a new cp/dp service (see docs/decisions/0006-service-scaffold.md)
 make help        # everything else
 ```
 

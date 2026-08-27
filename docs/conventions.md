@@ -13,6 +13,9 @@ sits inside; this doc is where topic depth actually lives.
 see [architecture.md#service-topology](architecture.md#service-topology) for
 the full shape. new service = new `internal/svc/<name>` + `cmd/<name>`,
 following an existing one exactly; `internal/lib` shouldn't need to change.
+`make new-service` scaffolds the wiring (not the domain logic) for a new
+control-plane or data-plane service - see
+[0006-service-scaffold](decisions/0006-service-scaffold.md).
 
 **a domain package defines its own narrow interfaces for what it depends
 on** - never imports the concrete types of the services/repositories it
@@ -371,7 +374,11 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   chart, reuses `stack/postgres/init/01-app-role.sql` verbatim (the
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
-  postgres should run.
+  postgres should run. named `hyrule-database`, not after any one
+  service - every `cp`-type service shares it.
+- **the Tiltfile discovers services from `deploy/values/*`** rather than
+  listing them - see
+  [0006-service-scaffold](decisions/0006-service-scaffold.md).
 - **every service takes config through env vars, full stop** - `app` has
   no mechanism for mounting a config file into a pod. `env` map keys are
   the literal env var names (no prefix magic; pings' own values file
