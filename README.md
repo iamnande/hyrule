@@ -8,8 +8,7 @@ working code. see [docs/architecture.md](docs/architecture.md) for the why.
 | service | entrypoint | what it does |
 |---|---|---|
 | `pings` | `cmd/pings` | a lightweight registry of homelab apps/services/hosts - a thing self-reports by pinging |
-| `iam-jwks-cp` | `cmd/iam-jwks-cp` | JSON Web Key Set for verifying JWTs (control plane) |
-| `iam-jwks-dp` | `cmd/iam-jwks-dp` | JSON Web Key Set for verifying JWTs (data plane) |
+| `iam-jwks` | `cmd/iam-jwks` | JSON Web Key Set used to verify JWTs |
 
 ## running it
 
@@ -22,7 +21,7 @@ make image-build # build the pings container image
 make image-run   # run the built image locally
 make stack-up    # start the local dependency stack (see stack/compose.yml)
 make stack-down  # stop it
-make new-service # scaffold a new cp/dp service (see docs/decisions/0006-service-scaffold.md)
+make new-service # scaffold a new service (see docs/decisions/0006-service-scaffold.md)
 make help        # everything else
 ```
 

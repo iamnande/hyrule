@@ -1,8 +1,8 @@
 app:
-  fullnameOverride: iam-jwks-cp
+  fullnameOverride: iam-jwks
 
   image:
-    repository: iamnande/iam-jwks-cp
+    repository: iamnande/iam-jwks
     tag: latest
 
   service:

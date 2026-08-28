@@ -14,8 +14,7 @@ see [architecture.md#service-topology](architecture.md#service-topology) for
 the full shape. new service = new `internal/svc/<name>` + `cmd/<name>`,
 following an existing one exactly; `internal/lib` shouldn't need to change.
 `make new-service` scaffolds the wiring (not the domain logic) for a new
-control-plane or data-plane service - see
-[0006-service-scaffold](decisions/0006-service-scaffold.md).
+service - see [0006-service-scaffold](decisions/0006-service-scaffold.md).
 
 **a domain package defines its own narrow interfaces for what it depends
 on** - never imports the concrete types of the services/repositories it

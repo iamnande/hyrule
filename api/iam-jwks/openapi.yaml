@@ -1,0 +1,6 @@
+openapi: 3.0.3
+info:
+  title: IAM JWKS API
+  description: "JSON Web Key Set used to verify JWTs"
+  version: "2026-08-28"
+paths: {}
