@@ -37,9 +37,13 @@ concrete types). two implementations satisfy it:
 - **secret-file-backed**, for a real deployment - reads the mounted
   Secret volume at startup, nothing else.
 
-which one gets wired in is a `cmd/iam-jwks/main.go` concern, same as
-every other config-driven fx choice in this repo - not a runtime branch
-inside the domain.
+which one gets wired in is a composition-root concern, not a runtime
+branch inside the domain: `cmd/iam-jwks/app.Module(fileCfg)` picks
+`svc.WithFileStore()` when `HYRULE_IAM_JWKS_KEYS_FILE_PATH` is set,
+`svc.WithPostgres()` (plus `database.Module`) otherwise - the file path
+being set is the only signal, no separate mode flag to keep in sync
+with it. file-backed mode never includes `database.Module` at all, so
+there's no postgres connection sitting unused in a real deployment.
 
 ## what this ruled out
 

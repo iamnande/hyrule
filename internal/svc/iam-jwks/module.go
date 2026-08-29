@@ -9,13 +9,13 @@ import (
 	"github.com/iamnande/hyrule/internal/svc/iam-jwks/repository"
 )
 
-var Module = fx.Module("iam-jwks",
-	fx.Provide(
-		repository.New,
-		newService,
-		newAPIHandler,
-	),
-)
+func WithPostgres() fx.Option {
+	return fx.Provide(repository.New, newServiceFromPostgres, newAPIHandler)
+}
+
+func WithFileStore() fx.Option {
+	return fx.Provide(repository.NewFile, newServiceFromFile, newAPIHandler)
+}
 
 type apiHandlerResult struct {
 	fx.Out
@@ -23,7 +23,11 @@ type apiHandlerResult struct {
 	API rest.APIHandler `group:"apis"`
 }
 
-func newService(repo *repository.Repository) *domain.Service {
+func newServiceFromPostgres(repo *repository.Repository) *domain.Service {
+	return domain.NewService(repo)
+}
+
+func newServiceFromFile(repo *repository.FileRepository) *domain.Service {
 	return domain.NewService(repo)
 }
 

@@ -10,8 +10,6 @@ what's not decided or not built yet.
 
 - close the CI gap on the k3s/Tilt/Helm path - it has zero coverage today,
   everything else on this list builds on top of that path
-- `iam-jwks` serves a real `GET /.well-known/jwks.json` now - next is the
-  secret-file-backed `KeyStore` implementation (initiative 2, ticket 3)
 - prove the hyrule -> homelab handoff for real: deploy `pings` to an
   actual homelab cluster, not just the local dev loop
 - once CI covers the k3s path, retire `stack/compose.yml` - it's been a
@@ -43,12 +41,12 @@ only exercise `stack/compose.yml`.
    same job - closes the gap already on record in
    [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
 
-### 2. iam-jwks: real domain
+### 2. iam-jwks: real domain - done
 
-the spike is done - [0007](decisions/0007-iam-jwks-key-distribution.md):
-the source of truth is a 1Password vault, region-local propagation is
-the `onepassword-operator`'s job (off the shelf, restarts on rotation),
-and `iam-jwks` itself just reads a local mount and caches in memory. no
+[0007](decisions/0007-iam-jwks-key-distribution.md): the source of truth
+is a 1Password vault, region-local propagation is the
+`onepassword-operator`'s job (off the shelf, restarts on rotation), and
+`iam-jwks` itself just reads a local mount and caches in memory. no
 poll/push/eventing code belongs in this service.
 
 1. ~~domain + `KeyStore` interface + a postgres-backed implementation for
@@ -56,11 +54,14 @@ poll/push/eventing code belongs in this service.
    keys table~~ - done.
 2. ~~the real API: `GET /.well-known/jwks.json`, EdDSA/Ed25519 JWKs (RFC
    8037), oapi-codegen wiring, handlers, integration tests~~ - done.
-3. the secret-file-backed `KeyStore` implementation, wired in
-   `cmd/iam-jwks/main.go` behind whatever config selects it - the
-   1Password Connect server + operator themselves are separate
-   infrastructure work, tracked under infrastructure below, sequenced
-   behind there being a second real region to test against.
+3. ~~the secret-file-backed `KeyStore` implementation, wired in behind
+   config~~ - done: `cmd/iam-jwks/app.Module(fileCfg)` picks
+   `svc.WithFileStore()` when `HYRULE_IAM_JWKS_KEYS_FILE_PATH` is set,
+   `svc.WithPostgres()` otherwise - no database wiring at all in
+   file-backed mode. the 1Password Connect server + operator themselves
+   are still separate infrastructure work, tracked under infrastructure
+   below, sequenced behind there being a second real region to test
+   against.
 
 ### 3. first real homelab deploy of pings
 
