@@ -8,8 +8,13 @@ PROJECT_VERSION = str(read_file('VERSION')).strip()
 PROJECT_COMMIT = str(local('git rev-parse HEAD | cut -c1-8', quiet=True)).strip()
 BUILD_DATETIME = str(local('date -u +%Y-%m-%dT%H:%M:%SZ', quiet=True)).strip()
 
-init_sql = read_file('stack/postgres/init/01-app-role.sql')
-init_sql_indented = '\n'.join(['    ' + line for line in str(init_sql).splitlines()])
+init_dir = 'stack/postgres/init'
+init_files = [f for f in str(local('ls %s' % init_dir, quiet=True)).strip().split('\n') if f]
+init_data = []
+for init_file in init_files:
+    content = str(read_file('%s/%s' % (init_dir, init_file))).splitlines()
+    indented = '\n'.join(['    ' + line for line in content])
+    init_data.append('  %s: |\n%s' % (init_file, indented))
 
 k8s_yaml(blob("""
 apiVersion: v1
@@ -17,9 +22,8 @@ kind: ConfigMap
 metadata:
   name: hyrule-database-init
 data:
-  01-app-role.sql: |
 %s
-""" % init_sql_indented))
+""" % '\n'.join(init_data)))
 
 k8s_yaml('deploy/local/postgres.yaml')
 k8s_resource('hyrule-database', port_forwards='5432:5432', labels=['data'])

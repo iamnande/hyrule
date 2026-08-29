@@ -386,10 +386,14 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   `app` or `platform` and commit the result, same as any other
   generated-and-committed output in this repo.
 - **`deploy/local/postgres.yaml` is dev-only** - ephemeral storage, no
-  chart, reuses `stack/postgres/init/01-app-role.sql` verbatim (the
-  Tiltfile reads that file directly into a ConfigMap rather than
-  duplicating its contents). not a template for how a real homelab
-  postgres should run. named `hyrule-database`, not after any one
+  chart, reuses every file in `stack/postgres/init/` verbatim (the
+  Tiltfile reads the whole directory into a ConfigMap, one key per file,
+  rather than duplicating contents or hardcoding filenames - compose
+  mounts that directory directly and runs everything in it, the Tiltfile
+  has to do the same or the two postgres paths silently drift, which is
+  exactly what happened the first time a second init file was added).
+  not a template for how a real homelab postgres should run. named
+  `hyrule-database`, not after any one
   service - every database-backed service shares it.
 - **the Tiltfile discovers services from `deploy/values/*`** rather than
   listing them - see
