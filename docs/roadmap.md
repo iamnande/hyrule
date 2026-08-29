@@ -10,9 +10,8 @@ what's not decided or not built yet.
 
 - close the CI gap on the k3s/Tilt/Helm path - it has zero coverage today,
   everything else on this list builds on top of that path
-- give `iam-jwks` real behavior: a `KeyStore` interface with a
-  postgres-backed dev implementation and a secret-file-backed real one -
-  see [0007](decisions/0007-iam-jwks-key-distribution.md)
+- give `iam-jwks` a real API - domain/`KeyStore`/postgres repository are
+  done, next is the actual JWKS endpoint (initiative 2, ticket 2)
 - prove the hyrule -> homelab handoff for real: deploy `pings` to an
   actual homelab cluster, not just the local dev loop
 - once CI covers the k3s path, retire `stack/compose.yml` - it's been a
@@ -46,16 +45,15 @@ only exercise `stack/compose.yml`.
 
 ### 2. iam-jwks: real domain
 
-the scaffold exists, nothing behind it does. the spike is done -
-[0007](decisions/0007-iam-jwks-key-distribution.md): the source of truth
-is a 1Password vault, region-local propagation is the
-`onepassword-operator`'s job (off the shelf, restarts on rotation), and
-`iam-jwks` itself just reads a local mount and caches in memory. no
+the spike is done - [0007](decisions/0007-iam-jwks-key-distribution.md):
+the source of truth is a 1Password vault, region-local propagation is
+the `onepassword-operator`'s job (off the shelf, restarts on rotation),
+and `iam-jwks` itself just reads a local mount and caches in memory. no
 poll/push/eventing code belongs in this service.
 
-1. domain + `KeyStore` interface + a postgres-backed implementation for
+1. ~~domain + `KeyStore` interface + a postgres-backed implementation for
    local dev (`hyrule_app_ro`, strict `SELECT`-only) + migration for the
-   keys table, following `internal/svc/pings` as the reference.
+   keys table~~ - done.
 2. the real API: a path in `api/iam-jwks/openapi.yaml`, oapi-codegen
    wiring, handlers, integration tests.
 3. the secret-file-backed `KeyStore` implementation, wired in
