@@ -1,6 +1,96 @@
 openapi: 3.0.3
 info:
-  title: IAM JWKS API
-  description: "JSON Web Key Set used to verify JWTs"
-  version: "2026-08-28"
-paths: {}
+  title: iam-jwks
+  description: >
+    the current JSON Web Key Set used to verify JWTs issued elsewhere in
+    homelab. read-only - key material comes from a 1Password vault, see
+    docs/decisions/0007-iam-jwks-key-distribution.md.
+  version: "2026-08-29"
+
+paths:
+  /.well-known/jwks.json:
+    get:
+      operationId: getJWKS
+      summary: the current key set
+      responses:
+        '200':
+          description: the current key set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKS'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    JWK:
+      type: object
+      description: RFC 8037. EdDSA/Ed25519 only.
+      required: [kid, kty, alg, use, crv, x]
+      properties:
+        kid:
+          type: string
+        kty:
+          type: string
+          enum: [OKP]
+        alg:
+          type: string
+          enum: [EdDSA]
+        use:
+          type: string
+          enum: [sig]
+        crv:
+          type: string
+          enum: [Ed25519]
+        x:
+          type: string
+          description: base64url-encoded Ed25519 public key.
+
+    JWKS:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/JWK'
+
+    InvalidAttribute:
+      type: object
+      required: [path, rule, reason, source]
+      properties:
+        path:
+          type: string
+        rule:
+          type: string
+        reason:
+          type: string
+        source:
+          type: string
+          enum: [body, path, query, header]
+
+    Error:
+      type: object
+      required: [code, name, message, operation_id]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        message:
+          type: string
+        operation_id:
+          type: string
+        invalid_attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvalidAttribute'
+
+  responses:
+    InternalServerError:
+      description: something went wrong on our end
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

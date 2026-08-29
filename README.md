@@ -41,7 +41,9 @@ see [docs/decisions/0003](docs/decisions/0003-runtime.md),
 [0004](docs/decisions/0004-local-cluster.md), and
 [0005](docs/decisions/0005-helm-chart-split.md) for why this shape.
 
-## endpoints (pings)
+## endpoints
+
+every service gets these for free via `runtime.NewModule`:
 
 | path | what |
 |---|---|
@@ -50,8 +52,19 @@ see [docs/decisions/0003](docs/decisions/0003-runtime.md),
 | `GET /livez` | liveness probe |
 | `GET /readyz` | readiness probe |
 | `GET /healthz` | dependency diagnostics |
+
+`pings`:
+
+| path | what |
+|---|---|
 | `POST /pings` | record a ping - registers the name on first call, bumps last-seen after |
 | `GET /pings` | list everything registered, with derived state (`up`/`stale`) |
+
+`iam-jwks`:
+
+| path | what |
+|---|---|
+| `GET /.well-known/jwks.json` | the current key set - see [docs/decisions/0007](docs/decisions/0007-iam-jwks-key-distribution.md) |
 
 ## requirements
 

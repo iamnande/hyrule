@@ -8,8 +8,10 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 
+	iamJwksAPI "github.com/iamnande/hyrule/cmd/iam-jwks/app"
 	pingsAPI "github.com/iamnande/hyrule/cmd/pings/app"
 	"github.com/iamnande/hyrule/internal/lib/runtime"
+	pingsDomain "github.com/iamnande/hyrule/internal/svc/pings/domain"
 	"github.com/iamnande/hyrule/tests/utils"
 )
 
@@ -34,7 +36,12 @@ var _ = DescribeTable("Entrypoint",
 	},
 	Entry(
 		"Pings",
-		[]fx.Option{runtime.NewModule(pingsAPI.Name), pingsAPI.Module},
+		[]fx.Option{runtime.NewModule(pingsAPI.Name), pingsAPI.Module, fx.Provide(pingsDomain.LoadConfig)},
+		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
+	),
+	Entry(
+		"IamJwks",
+		[]fx.Option{runtime.NewModule(iamJwksAPI.Name), iamJwksAPI.Module},
 		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
 	),
 )

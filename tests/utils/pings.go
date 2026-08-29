@@ -7,6 +7,7 @@ import (
 	"go.uber.org/fx/fxtest"
 
 	pingsAPI "github.com/iamnande/hyrule/cmd/pings/app"
+	"github.com/iamnande/hyrule/internal/svc/pings/domain"
 )
 
 type TestPings struct {
@@ -15,7 +16,7 @@ type TestPings struct {
 }
 
 func NewTestPings(opts ...fx.Option) TestPings {
-	test := constructTestAPI([]fx.Option{pingsAPI.Module}, opts...)
+	test := constructTestAPI([]fx.Option{pingsAPI.Module, fx.Provide(domain.LoadConfig)}, opts...)
 	return TestPings{
 		API: test.API,
 		App: test.App,

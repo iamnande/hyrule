@@ -10,8 +10,8 @@ what's not decided or not built yet.
 
 - close the CI gap on the k3s/Tilt/Helm path - it has zero coverage today,
   everything else on this list builds on top of that path
-- give `iam-jwks` a real API - domain/`KeyStore`/postgres repository are
-  done, next is the actual JWKS endpoint (initiative 2, ticket 2)
+- `iam-jwks` serves a real `GET /.well-known/jwks.json` now - next is the
+  secret-file-backed `KeyStore` implementation (initiative 2, ticket 3)
 - prove the hyrule -> homelab handoff for real: deploy `pings` to an
   actual homelab cluster, not just the local dev loop
 - once CI covers the k3s path, retire `stack/compose.yml` - it's been a
@@ -54,8 +54,8 @@ poll/push/eventing code belongs in this service.
 1. ~~domain + `KeyStore` interface + a postgres-backed implementation for
    local dev (`hyrule_app_ro`, strict `SELECT`-only) + migration for the
    keys table~~ - done.
-2. the real API: a path in `api/iam-jwks/openapi.yaml`, oapi-codegen
-   wiring, handlers, integration tests.
+2. ~~the real API: `GET /.well-known/jwks.json`, EdDSA/Ed25519 JWKs (RFC
+   8037), oapi-codegen wiring, handlers, integration tests~~ - done.
 3. the secret-file-backed `KeyStore` implementation, wired in
    `cmd/iam-jwks/main.go` behind whatever config selects it - the
    1Password Connect server + operator themselves are separate
