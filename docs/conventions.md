@@ -424,6 +424,20 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   only auto-groups workloads (Deployment/StatefulSet/...); anything else
   lands in an unlabeled "uncategorized" bucket unless claimed explicitly
   via `k8s_resource(..., objects=['name:kind'])`.
+- **`migrate` runs in-cluster too, as a real `batch/v1` `Job`** - the only
+  thing that still happens on the host is the image build. `migrations/`
+  gets read into a `hyrule-migrations` ConfigMap the same way
+  `stack/postgres/init/` does (`configmap_from_dir`, one helper for both);
+  [deploy/local/migrate-job.yaml](../deploy/local/migrate-job.yaml) mounts
+  it and runs the official `migrate/migrate` image against
+  `hyrule-database`'s in-cluster DNS name, not a port-forwarded
+  `localhost`. **`Job`s are immutable once created** - if postgres data
+  ever gets reset independently of Tilt (a pod delete outside Tilt's own
+  reconciliation, same trap as the postgres-init ConfigMap earlier),
+  Tilt won't notice the already-"Complete" `Job` is stale on its own.
+  `tilt trigger migrate` (or the button in Tilt's UI) deletes and
+  recreates it correctly - verified directly, this doesn't happen
+  automatically.
 - **every service takes config through env vars, full stop** - `app` has
   no mechanism for mounting a config file into a pod. `env` map keys are
   the literal env var names (no prefix magic; pings' own values file

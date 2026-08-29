@@ -11,23 +11,23 @@ BUILD_DATETIME = str(local('date -u +%Y-%m-%dT%H:%M:%SZ', quiet=True)).strip()
 
 service_slugs = [s for s in str(local('ls deploy/values', quiet=True)).strip().split('\n') if s]
 
-init_dir = 'stack/postgres/init'
-init_files = [f for f in str(local('ls %s' % init_dir, quiet=True)).strip().split('\n') if f]
-init_data = []
-for init_file in init_files:
-    content = str(read_file('%s/%s' % (init_dir, init_file))).splitlines()
-    indented = '\n'.join(['    ' + line for line in content])
-    init_data.append('  %s: |\n%s' % (init_file, indented))
-
-k8s_yaml(blob("""
+def configmap_from_dir(name, path):
+    files = [f for f in str(local('ls %s' % path, quiet=True)).strip().split('\n') if f]
+    entries = []
+    for f in files:
+        content = str(read_file('%s/%s' % (path, f))).splitlines()
+        indented = '\n'.join(['    ' + line for line in content])
+        entries.append('  %s: |\n%s' % (f, indented))
+    return blob("""
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hyrule-database-init
+  name: %s
 data:
 %s
-""" % '\n'.join(init_data)))
+""" % (name, '\n'.join(entries)))
 
+k8s_yaml(configmap_from_dir('hyrule-database-init', 'stack/postgres/init'))
 k8s_yaml('deploy/local/postgres.yaml')
 k8s_resource(
     'hyrule-database',
@@ -36,9 +36,11 @@ k8s_resource(
     labels=['local-only'],
 )
 
-local_resource(
+k8s_yaml(configmap_from_dir('hyrule-migrations', 'migrations'))
+k8s_yaml('deploy/local/migrate-job.yaml')
+k8s_resource(
     'migrate',
-    cmd='make db-migrate-up',
+    objects=['hyrule-migrations:configmap'],
     resource_deps=['hyrule-database'],
     labels=['local-only'],
 )
