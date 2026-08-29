@@ -102,7 +102,7 @@ inside this repo.
   currently hand-written on purpose, see
   [conventions.md#api-design](conventions.md#api-design)
 
-### platform (data movement, eventing)
+### platform
 
 - `iam-jwks` real domain + `KeyStore` interface (initiative 2)
 - the sync-mechanism spike (initiative 2, ticket 1) picks the actual
