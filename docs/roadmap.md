@@ -10,9 +10,9 @@ what's not decided or not built yet.
 
 - close the CI gap on the k3s/Tilt/Helm path - it has zero coverage today,
   everything else on this list builds on top of that path
-- give `iam-jwks` real behavior, and get a real answer (not a guess) on
-  whether a non-primary deployment needs poll, push, or eventing to stay
-  current
+- give `iam-jwks` real behavior: a `KeyStore` interface with a
+  postgres-backed dev implementation and a secret-file-backed real one -
+  see [0007](decisions/0007-iam-jwks-key-distribution.md)
 - prove the hyrule -> homelab handoff for real: deploy `pings` to an
   actual homelab cluster, not just the local dev loop
 - once CI covers the k3s path, retire `stack/compose.yml` - it's been a
@@ -44,21 +44,25 @@ only exercise `stack/compose.yml`.
    same job - closes the gap already on record in
    [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
 
-### 2. iam-jwks: real domain + the sync-mechanism build-out
+### 2. iam-jwks: real domain
 
-the scaffold exists, nothing behind it does. this is also where the
-platform/eventing pattern actually gets built, not just discussed.
+the scaffold exists, nothing behind it does. the spike is done -
+[0007](decisions/0007-iam-jwks-key-distribution.md): the source of truth
+is a 1Password vault, region-local propagation is the
+`onepassword-operator`'s job (off the shelf, restarts on rotation), and
+`iam-jwks` itself just reads a local mount and caches in memory. no
+poll/push/eventing code belongs in this service.
 
-1. **spike**: the problem space is "how does a non-primary deployment stay
-   current on key rotation" - poll on an interval, push from the
-   authoritative writer, or eventing. pick the shape and write down why,
-   plus the read/write role-separation question from the jwks
-   conversation (a `hyrule_app_ro` role, strict `SELECT`-only). output is
-   a decision doc, not code.
-2. domain + `KeyStore` interface + postgres-backed repository + migration
-   for the keys table, following `internal/svc/pings` as the reference.
-3. the real API: a path in `api/iam-jwks/openapi.yaml`, oapi-codegen
+1. domain + `KeyStore` interface + a postgres-backed implementation for
+   local dev (`hyrule_app_ro`, strict `SELECT`-only) + migration for the
+   keys table, following `internal/svc/pings` as the reference.
+2. the real API: a path in `api/iam-jwks/openapi.yaml`, oapi-codegen
    wiring, handlers, integration tests.
+3. the secret-file-backed `KeyStore` implementation, wired in
+   `cmd/iam-jwks/main.go` behind whatever config selects it - the
+   1Password Connect server + operator themselves are separate
+   infrastructure work, tracked under infrastructure below, sequenced
+   behind there being a second real region to test against.
 
 ### 3. first real homelab deploy of pings
 
@@ -98,20 +102,27 @@ inside this repo.
 - retire `stack/compose.yml` once CI covers the k3s path
 - `hyrule_app_ro` postgres role - strict `SELECT`-only, for consumers that
   should never be able to write regardless of physical topology
+- 1Password Connect server + `onepassword-operator` in-cluster, feeding
+  `deploy/helm/platform` via `additionalK8sObjects` - see
+  [0007](decisions/0007-iam-jwks-key-distribution.md). sequenced behind
+  there being a second real region to test replication against, not
+  built ahead of that
 - error registry: config-driven generator + a docs page per code -
   currently hand-written on purpose, see
   [conventions.md#api-design](conventions.md#api-design)
 
 ### platform
 
-- `iam-jwks` real domain + `KeyStore` interface (initiative 2)
-- the sync-mechanism spike (initiative 2, ticket 1) picks the actual
-  shape - poll, push, or eventing - and writes down why
-- Kafka/Flink/normalized eventing with versioned schemas is the direction
-  for cross-service data movement generally, based on how this has been
-  built before - `iam-jwks` is where that pattern gets proven out first,
-  scoped to the one real problem in front of it rather than built as
-  platform infrastructure up front
+- `iam-jwks` real domain + `KeyStore` interface (initiative 2) -
+  [0007](decisions/0007-iam-jwks-key-distribution.md) found this isn't
+  the service that proves out eventing after all: 1Password's own
+  replication plus the `onepassword-operator`'s restart-on-change already
+  solves key distribution, no stream needed
+- Kafka/Flink/normalized eventing with versioned schemas is still the
+  direction for cross-service data movement generally, based on how this
+  has been built before - it needs a real service with an actual
+  streaming/fan-out problem to get proven out on, not a payload this
+  small; nothing currently in flight is that service yet
 
 ### product
 
