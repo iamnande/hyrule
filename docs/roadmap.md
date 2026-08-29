@@ -44,17 +44,17 @@ only exercise `stack/compose.yml`.
    same job - closes the gap already on record in
    [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
 
-### 2. iam-jwks: real domain + the sync-mechanism question
+### 2. iam-jwks: real domain + the sync-mechanism build-out
 
-the scaffold exists, nothing behind it does. this is also the vehicle for
-answering the platform/eventing question with evidence instead of
-speculation.
+the scaffold exists, nothing behind it does. this is also where the
+platform/eventing pattern actually gets built, not just discussed.
 
 1. **spike**: the problem space is "how does a non-primary deployment stay
-   current on key rotation" - poll on an interval, `-cp`-style push,
-   or eventing - plus the read/write role-separation question from the
-   jwks conversation (a `hyrule_app_ro` role, strict `SELECT`-only).
-   output is a decision doc, not code.
+   current on key rotation" - poll on an interval, push from the
+   authoritative writer, or eventing. pick the shape and write down why,
+   plus the read/write role-separation question from the jwks
+   conversation (a `hyrule_app_ro` role, strict `SELECT`-only). output is
+   a decision doc, not code.
 2. domain + `KeyStore` interface + postgres-backed repository + migration
    for the keys table, following `internal/svc/pings` as the reference.
 3. the real API: a path in `api/iam-jwks/openapi.yaml`, oapi-codegen
@@ -105,11 +105,13 @@ inside this repo.
 ### platform (data movement, eventing)
 
 - `iam-jwks` real domain + `KeyStore` interface (initiative 2)
-- the sync-mechanism spike (initiative 2, ticket 1) - this is what
-  actually informs whether Kafka/Flink/normalized eventing with versioned
-  schemas is warranted yet, not the other way around
-- everything past the spike is explicitly not scoped until it answers
-  with evidence, not speculation
+- the sync-mechanism spike (initiative 2, ticket 1) picks the actual
+  shape - poll, push, or eventing - and writes down why
+- Kafka/Flink/normalized eventing with versioned schemas is the direction
+  for cross-service data movement generally, based on how this has been
+  built before - `iam-jwks` is where that pattern gets proven out first,
+  scoped to the one real problem in front of it rather than built as
+  platform infrastructure up front
 
 ### product
 
