@@ -7,7 +7,8 @@ For how this repo is built and the rules for changing it, see
 read `docs/conventions.md` before making changes.
 
 Deliberate decisions in this repo - do NOT silently revert them: see
-[docs/decisions](docs/decisions).
+[docs/decisions](docs/decisions). current priorities and what's not built
+yet: [docs/roadmap.md](docs/roadmap.md).
 
 ## Maintaining this file
 
