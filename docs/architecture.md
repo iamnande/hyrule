@@ -18,7 +18,7 @@ topic outgrows its section there, it graduates into its own doc.
 
 `internal/lib` is shared across every service - runtime, rest, config,
 tracing, logging, version. it carries no domain knowledge. `internal/svc/<name>`
-is one service's own domain, api, and (eventually) data access - nothing else
+is one service's own domain, api, and data access - nothing else
 reaches into it. `cmd/<name>` is that service's entrypoint. a new service
 repeats this shape; `internal/lib` shouldn't need to change for it to exist.
 

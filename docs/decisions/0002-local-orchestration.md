@@ -26,10 +26,11 @@ is one less thing to context-switch on.
 ## dev loop: Tilt
 
 watches source, rebuilds the image, redeploys (or live-updates a running
-container) - actively maintained, integrates with `kind` cleanly, and has
-a first-class `helm()` Tiltfile function that renders the chart being
-built here rather than requiring a separate manifest path for dev vs.
-deploy.
+container) - actively maintained, integrates cleanly with any standard
+kubeconfig context (see [0004](0004-local-cluster.md) for which one),
+and has a first-class `helm()` Tiltfile function that renders the chart
+being built here rather than requiring a separate manifest path for dev
+vs. deploy.
 
 ## not decided here
 

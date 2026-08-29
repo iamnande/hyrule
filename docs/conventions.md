@@ -374,7 +374,7 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   Tiltfile reads that file directly into a ConfigMap rather than
   duplicating its contents). not a template for how a real homelab
   postgres should run. named `hyrule-database`, not after any one
-  service - every `cp`-type service shares it.
+  service - every database-backed service shares it.
 - **the Tiltfile discovers services from `deploy/values/*`** rather than
   listing them - see
   [0006-service-scaffold](decisions/0006-service-scaffold.md).
@@ -406,3 +406,5 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - the `app` Helm chart has no `values.schema.json`/generated `README.md`
   and no `helm-unittest` suites yet - see
   [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
+- CI still runs against `stack/compose.yml`, not the k3s/Tilt loop - the
+  `deploy/helm`/Tiltfile path has no CI coverage at all yet.

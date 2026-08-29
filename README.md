@@ -28,6 +28,19 @@ make help        # everything else
 `SERVICE_NAME` selects which service under `cmd/` a target targets, defaults
 to `pings`: `make run SERVICE_NAME=other-service`.
 
+### running against a real local cluster
+
+```
+make cluster-up  # start Rancher Desktop (kubernetes + containerd)
+make dev         # tilt up - builds and deploys every service under deploy/values/
+make cluster-status
+make cluster-down
+```
+
+see [docs/decisions/0003](docs/decisions/0003-runtime.md),
+[0004](docs/decisions/0004-local-cluster.md), and
+[0005](docs/decisions/0005-helm-chart-split.md) for why this shape.
+
 ## endpoints (pings)
 
 | path | what |
@@ -42,8 +55,9 @@ to `pings`: `make run SERVICE_NAME=other-service`.
 
 ## requirements
 
-- `make bootstrap` handles the rest (installs [mise](https://mise.jdx.dev/), provisions Go at the version pinned in `mise.toml`)
-- `docker` or `podman` (either works - `make` picks whichever is on `PATH`, preferring `docker`)
+- `make bootstrap` handles the rest (installs [mise](https://mise.jdx.dev/), provisions Go/Helm/Tilt at the versions pinned in `mise.toml`)
+- `docker` or `podman` for `make stack-*` (either works - `make` picks whichever is on `PATH`, preferring `docker`)
+- [Rancher Desktop](https://rancherdesktop.io/) (containerd mode) for `make cluster-*`/`make dev` - see [docs/decisions/0004](docs/decisions/0004-local-cluster.md)
 
 ## configuration
 

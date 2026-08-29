@@ -9,8 +9,6 @@ const (
 	StartTimeout = 5 * time.Second
 	DrainTimeout = 5 * time.Second
 
-	// must clear DrainTimeout with margin, or fx races the drain sleep - see
-	// the init() check below, which catches it the moment that stops being true.
 	StopTimeout = DrainTimeout + 5*time.Second
 )
 

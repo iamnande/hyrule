@@ -8,7 +8,8 @@ conformant Kubernetes distribution - same API, same manifests, same
 `kubectl`/Helm - just single-binary, lower footprint, and batteries
 included (embedded containerd, `local-path-provisioner`, a lightweight
 `ServiceLB`, Traefik ingress by default). nothing about hyrule's shape
-(one `internal/svc/<name>` + one Helm chart per service) depends on which
+(one `internal/svc/<name>` + one `deploy/values/<name>` against the
+shared chart, see [0005](0005-helm-chart-split.md)) depends on which
 distribution runs it.
 
 this changes what "fidelity to prod" means for local tooling - see
