@@ -226,6 +226,12 @@ query got complex, then the abstraction fought back. instead:
   [stack/postgres/init](../stack/postgres/init) on first container start;
   migrations still run as the owner role (`POSTGRES_USER`, see
   `DATABASE_URL` in `mk/database.mk`).
+- **`hyrule_app_ro` (strict `SELECT`, no write grants) is for a service
+  whose read path should never be able to write, at the database level,
+  not just in application code** - `iam-jwks` is the first to use it (see
+  [0007](decisions/0007-iam-jwks-key-distribution.md)). bootstrapped
+  alongside `hyrule_app` in
+  [stack/postgres/init](../stack/postgres/init).
 - entities that have an *owner* (account/workspace/user/team, when they
   exist) get their scoping column in their first migration, populated from
   day one, even before any policy references it. `pings` does not get one -
@@ -240,13 +246,23 @@ query got complex, then the abstraction fought back. instead:
 
 **migrations live in [migrations](../migrations)** at the repo root,
 applied with `make db-migrate-up` (`make db-migrate-create NAME=...` to
-scaffold one) - see [mk/database.mk](../mk/database.mk).
+scaffold one) - see [mk/database.mk](../mk/database.mk). one shared
+schema, every service's tables in it - so a table is named
+`<service>_<entity>` (`iam_jwks_keys`), not just `<entity>`, once there's
+more than one service. `pings` predates this and stays unprefixed rather
+than a needless rename.
 
 **`sqlc` generates into `repository/<entity>`, not `repository/generated`.**
-config at [sqlc.yaml](../sqlc.yaml); it reads `migrations/` and each
-service's own `repository/queries/*.sql`. the package is named after the
-entity (e.g. `repository/ping`), so call sites read as `ping.Upsert(...)`,
-not a stutter. run `sqlc generate` after any migration or query change.
+config at [sqlc.yaml](../sqlc.yaml); each service gets its own `sql:`
+entry, reading only that service's own migration file(s) - not the whole
+`migrations/` directory - and its own `repository/queries/*.sql`.
+pointing `schema` at the whole directory generates a Go struct for
+*every* table in the shared schema into *every* service's package,
+including tables it has nothing to do with; a service's generated
+package should only ever contain its own models. the package is named
+after the entity (e.g. `repository/ping`), so call sites read as
+`ping.Upsert(...)`, not a stutter. run `sqlc generate` after any
+migration or query change.
 
 **every query gets a supporting index, in the same migration.** if a query
 filters, joins, or orders on a column and that column isn't already covered

@@ -21,8 +21,8 @@ app:
     HYRULE_ENVIRONMENT: dev
     HYRULE_DATABASE_HOST: hyrule-database
     HYRULE_DATABASE_PORT: "5432"
-    HYRULE_DATABASE_USER: hyrule_app
-    HYRULE_DATABASE_PASSWORD: hyrule_app
+    HYRULE_DATABASE_USER: hyrule_app_ro
+    HYRULE_DATABASE_PASSWORD: hyrule_app_ro
     HYRULE_DATABASE_NAME: hyrule
     HYRULE_DATABASE_SSL_MODE: disable
 
