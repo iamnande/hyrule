@@ -398,6 +398,17 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - **the Tiltfile discovers services from `deploy/values/*`** rather than
   listing them - see
   [0006-service-scaffold](decisions/0006-service-scaffold.md).
+- **the Tiltfile separates local-only scaffolding from the actual
+  deploy, by label** - `hyrule-database` and `migrate` are
+  `labels=['local-only']`: dev-loop scaffolding a real cluster wouldn't
+  have. every service is `labels=['deploy']`: built via `nerdctl_build`
+  then applied via `helm(...)` against `deploy/values/<slug>/values.yaml`
+  - the same two inputs (chart + values) something like ArgoCD would
+  sync from later, not entangled with local-only concerns.
+- **every service's `k8s_resource` is `trigger_mode=TRIGGER_MODE_MANUAL`**
+  - a rebuild+redeploy is a deliberate click in Tilt's UI, not fired on
+  every file save. `tilt ci` still builds and deploys manual-mode
+  resources same as auto ones - verified directly, not assumed.
 - **every service takes config through env vars, full stop** - `app` has
   no mechanism for mounting a config file into a pod. `env` map keys are
   the literal env var names (no prefix magic; pings' own values file
