@@ -1,4 +1,5 @@
 load('ext://nerdctl', 'nerdctl_build')
+load('ext://helm_resource', 'helm_resource')
 
 ORG_NAME = 'iamnande'
 PROJECT_REPO_URL = 'github.com/iamnande/hyrule'
@@ -28,7 +29,12 @@ data:
 """ % '\n'.join(init_data)))
 
 k8s_yaml('deploy/local/postgres.yaml')
-k8s_resource('hyrule-database', port_forwards='5432:5432', labels=['local-only'])
+k8s_resource(
+    'hyrule-database',
+    objects=['hyrule-database-init:configmap'],
+    port_forwards='5432:5432',
+    labels=['local-only'],
+)
 
 local_resource(
     'migrate',
@@ -58,11 +64,15 @@ for slug in service_slugs:
     values = read_yaml(values_path)
     needs_db = 'HYRULE_DATABASE_HOST' in values.get('app', {}).get('env', {})
 
-    k8s_yaml(helm('deploy/helm/app-platform', name=slug, values=[values_path]))
-    k8s_resource(
-        slug,
+    helm_resource(
+        name=slug,
+        chart='deploy/helm/app-platform',
+        release_name=slug,
+        flags=['--values=%s' % values_path],
+        image_deps=['%s/%s' % (ORG_NAME, slug)],
+        image_keys=[('app.image.repository', 'app.image.tag')],
         resource_deps=['migrate'] if needs_db else [],
-        port_forwards=port_forward(local_port=0, container_port=8000),
+        port_forwards=[port_forward(local_port=0, container_port=8000)],
         labels=['deploy'],
-        trigger_mode=TRIGGER_MODE_MANUAL,
     )
+    k8s_resource(slug, trigger_mode=TRIGGER_MODE_MANUAL)

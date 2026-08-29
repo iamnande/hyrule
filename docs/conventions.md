@@ -401,14 +401,29 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - **the Tiltfile separates local-only scaffolding from the actual
   deploy, by label** - `hyrule-database` and `migrate` are
   `labels=['local-only']`: dev-loop scaffolding a real cluster wouldn't
-  have. every service is `labels=['deploy']`: built via `nerdctl_build`
-  then applied via `helm(...)` against `deploy/values/<slug>/values.yaml`
-  - the same two inputs (chart + values) something like ArgoCD would
-  sync from later, not entangled with local-only concerns.
-- **every service's `k8s_resource` is `trigger_mode=TRIGGER_MODE_MANUAL`**
-  - a rebuild+redeploy is a deliberate click in Tilt's UI, not fired on
-  every file save. `tilt ci` still builds and deploys manual-mode
-  resources same as auto ones - verified directly, not assumed.
+  have. every service is `labels=['deploy']`.
+- **deploy is a real `helm install`/`upgrade`, not a render-and-apply** -
+  `ext://helm_resource` (`tilt-dev`'s own extension) wraps actual Helm,
+  not the built-in `helm()` function (which only runs `helm template`
+  and hands Tilt raw YAML to apply - no release, no revision history, no
+  hooks). `helm list` shows real tracked releases now. `image_deps`/
+  `image_keys` inject the locally built, locally tagged image into
+  `app.image.repository`/`app.image.tag` at install time - the chart
+  itself never hardcodes a tag. the only inputs are the chart path and
+  `deploy/values/<slug>/values.yaml`, the same two things something like
+  ArgoCD would sync from later.
+- **every service's resource is `trigger_mode=TRIGGER_MODE_MANUAL`**
+  (layered on after `helm_resource`, which doesn't take that argument
+  directly - `k8s_resource(slug, trigger_mode=...)` reconfigures the
+  same-named resource) - a rebuild+redeploy is a deliberate click in
+  Tilt's UI, not fired on every file save. `tilt ci` still builds and
+  deploys manual-mode resources same as auto ones - verified directly,
+  not assumed.
+- **non-workload objects (a bare `ConfigMap`, each chart's
+  `ServiceAccount`) don't auto-associate with a named resource** - Tilt
+  only auto-groups workloads (Deployment/StatefulSet/...); anything else
+  lands in an unlabeled "uncategorized" bucket unless claimed explicitly
+  via `k8s_resource(..., objects=['name:kind'])`.
 - **every service takes config through env vars, full stop** - `app` has
   no mechanism for mounting a config file into a pod. `env` map keys are
   the literal env var names (no prefix magic; pings' own values file

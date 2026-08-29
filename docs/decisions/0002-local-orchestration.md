@@ -28,9 +28,11 @@ is one less thing to context-switch on.
 watches source, rebuilds the image, redeploys (or live-updates a running
 container) - actively maintained, integrates cleanly with any standard
 kubeconfig context (see [0004](0004-local-cluster.md) for which one),
-and has a first-class `helm()` Tiltfile function that renders the chart
-being built here rather than requiring a separate manifest path for dev
-vs. deploy.
+and (via `ext://helm_resource`) drives a real `helm install`/`upgrade`
+against the chart being built here rather than requiring a separate
+manifest path for dev vs. deploy - see
+[conventions.md#local-orchestration](../conventions.md#local-orchestration)
+for the mechanics.
 
 ## not decided here
 
