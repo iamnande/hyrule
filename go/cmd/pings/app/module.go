@@ -15,7 +15,7 @@ const Name = "pings"
 var Module = fx.Module(Name,
 	fx.Supply(health.DefaultProbes),
 	fx.Provide(config.LoadDatabase()),
-	fx.Provide(domain.LoadConfig),
+	fx.Provide(config.Load[domain.Config]("PINGS")),
 	database.Module,
 	pings.Module,
 )

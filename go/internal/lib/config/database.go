@@ -27,5 +27,5 @@ func (db Database) DSN() string {
 }
 
 func LoadDatabase() func() (Database, error) {
-	return load[Database]("DATABASE")
+	return Load[Database]("DATABASE")
 }

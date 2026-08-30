@@ -4,28 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/caarlos0/env/v11"
-
-	"github.com/iamnande/hyrule/go/internal/lib/version"
 	"github.com/iamnande/hyrule/go/internal/svc/iam-jwks/domain"
 )
 
 type EnvConfig struct {
 	Keys string `env:"KEYS"`
-}
-
-func LoadEnvConfig() (EnvConfig, error) {
-	cfg := EnvConfig{}
-	opts := env.Options{
-		Prefix: fmt.Sprintf("%s_IAM_JWKS_", strings.ToUpper(version.ServicePrefix)),
-	}
-	if err := env.ParseWithOptions(&cfg, opts); err != nil {
-		return cfg, err
-	}
-	return cfg, nil
 }
 
 type EnvRepository struct {

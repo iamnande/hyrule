@@ -11,7 +11,7 @@ type Deployment struct {
 }
 
 func LoadDeployment() func() (Deployment, error) {
-	loader := load[Deployment]("")
+	loader := Load[Deployment]("")
 	return func() (Deployment, error) {
 		cfg, err := loader()
 		if err != nil {

@@ -18,5 +18,5 @@ type HTTPServer struct {
 }
 
 func LoadHTTPServer() func() (HTTPServer, error) {
-	return load[HTTPServer]("HTTP_SERVER")
+	return Load[HTTPServer]("HTTP_SERVER")
 }

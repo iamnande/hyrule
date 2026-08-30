@@ -7,5 +7,5 @@ type Tracing struct {
 }
 
 func LoadTracing() func() (Tracing, error) {
-	return load[Tracing]("TRACING")
+	return Load[Tracing]("TRACING")
 }

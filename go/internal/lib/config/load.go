@@ -9,7 +9,7 @@ import (
 	"github.com/iamnande/hyrule/go/internal/lib/version"
 )
 
-func load[T any](prefix string) func() (T, error) {
+func Load[T any](prefix string) func() (T, error) {
 	return func() (T, error) {
 		cfg := new(T)
 		opts := env.Options{
