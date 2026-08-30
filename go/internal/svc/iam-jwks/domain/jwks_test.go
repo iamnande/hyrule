@@ -19,11 +19,11 @@ func (f *fakeKeyStore) List(ctx context.Context) ([]domain.Key, error) {
 	return f.keys, f.err
 }
 
-var _ = Describe("Service", func() {
+var _ = Describe("KeySet", func() {
 	Describe("List", func() {
 		It("returns the keys from the store", func() {
 			want := []domain.Key{{ID: "kid-1", Algorithm: "RS256", PublicKey: "pem"}}
-			svc := domain.NewService(&fakeKeyStore{keys: want})
+			svc := domain.NewKeySet(&fakeKeyStore{keys: want})
 
 			got, err := svc.List(context.Background())
 
@@ -32,7 +32,7 @@ var _ = Describe("Service", func() {
 		})
 
 		It("propagates a store error", func() {
-			svc := domain.NewService(&fakeKeyStore{err: errors.New("boom")})
+			svc := domain.NewKeySet(&fakeKeyStore{err: errors.New("boom")})
 
 			_, err := svc.List(context.Background())
 

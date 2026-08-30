@@ -33,16 +33,16 @@ type pingStore interface {
 	List(ctx context.Context) ([]Ping, error)
 }
 
-type Service struct {
+type Registry struct {
 	store      pingStore
 	staleAfter time.Duration
 }
 
-func NewService(store pingStore, cfg Config) *Service {
-	return &Service{store: store, staleAfter: cfg.StaleAfter}
+func NewRegistry(store pingStore, cfg Config) *Registry {
+	return &Registry{store: store, staleAfter: cfg.StaleAfter}
 }
 
-func (s *Service) Record(ctx context.Context, name string, kind Kind) (Ping, error) {
+func (s *Registry) Record(ctx context.Context, name string, kind Kind) (Ping, error) {
 	ping, err := s.store.Upsert(ctx, name, kind)
 	if err != nil {
 		return Ping{}, err
@@ -50,7 +50,7 @@ func (s *Service) Record(ctx context.Context, name string, kind Kind) (Ping, err
 	return s.withState(ping), nil
 }
 
-func (s *Service) List(ctx context.Context) ([]Ping, error) {
+func (s *Registry) List(ctx context.Context) ([]Ping, error) {
 	pings, err := s.store.List(ctx)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (s *Service) List(ctx context.Context) ([]Ping, error) {
 	return pings, nil
 }
 
-func (s *Service) withState(ping Ping) Ping {
+func (s *Registry) withState(ping Ping) Ping {
 	ping.State = StateUp
 	if time.Since(ping.LastSeenAt) > s.staleAfter {
 		ping.State = StateStale

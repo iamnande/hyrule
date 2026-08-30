@@ -12,7 +12,7 @@ import (
 var Module = fx.Module("iam-jwks",
 	fx.Provide(
 		repository.NewEnv,
-		newService,
+		newKeySet,
 		newAPIHandler,
 	),
 )
@@ -23,11 +23,11 @@ type apiHandlerResult struct {
 	API rest.APIHandler `group:"apis"`
 }
 
-func newService(repo *repository.EnvRepository) *domain.Service {
-	return domain.NewService(repo)
+func newKeySet(repo *repository.EnvRepository) *domain.KeySet {
+	return domain.NewKeySet(repo)
 }
 
-func newAPIHandler(service *domain.Service) apiHandlerResult {
+func newAPIHandler(service *domain.KeySet) apiHandlerResult {
 	return apiHandlerResult{
 		API: jwksapi.NewRouter(jwksapi.NewHandlers(service)),
 	}

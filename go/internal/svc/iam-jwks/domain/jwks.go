@@ -16,14 +16,14 @@ type keyStore interface {
 	List(ctx context.Context) ([]Key, error)
 }
 
-type Service struct {
+type KeySet struct {
 	store keyStore
 }
 
-func NewService(store keyStore) *Service {
-	return &Service{store: store}
+func NewKeySet(store keyStore) *KeySet {
+	return &KeySet{store: store}
 }
 
-func (s *Service) List(ctx context.Context) ([]Key, error) {
+func (s *KeySet) List(ctx context.Context) ([]Key, error) {
 	return s.store.List(ctx)
 }

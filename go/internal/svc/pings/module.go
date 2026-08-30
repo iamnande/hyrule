@@ -11,8 +11,8 @@ import (
 
 var Module = fx.Module("pings",
 	fx.Provide(
-		repository.New,
-		newService,
+		repository.NewPostgres,
+		newRegistry,
 		newAPIHandler,
 	),
 )
@@ -23,11 +23,11 @@ type apiHandlerResult struct {
 	API rest.APIHandler `group:"apis"`
 }
 
-func newService(repo *repository.Repository, cfg domain.Config) *domain.Service {
-	return domain.NewService(repo, cfg)
+func newRegistry(repo *repository.PostgresRepository, cfg domain.Config) *domain.Registry {
+	return domain.NewRegistry(repo, cfg)
 }
 
-func newAPIHandler(service *domain.Service) apiHandlerResult {
+func newAPIHandler(service *domain.Registry) apiHandlerResult {
 	return apiHandlerResult{
 		API: pingsapi.NewRouter(pingsapi.NewHandlers(service)),
 	}

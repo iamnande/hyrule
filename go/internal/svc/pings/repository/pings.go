@@ -12,15 +12,15 @@ import (
 	"github.com/iamnande/hyrule/go/internal/svc/pings/repository/ping"
 )
 
-type Repository struct {
+type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
-func New(pool *pgxpool.Pool) *Repository {
-	return &Repository{pool: pool}
+func NewPostgres(pool *pgxpool.Pool) *PostgresRepository {
+	return &PostgresRepository{pool: pool}
 }
 
-func (r *Repository) Upsert(ctx context.Context, name string, kind domain.Kind) (domain.Ping, error) {
+func (r *PostgresRepository) Upsert(ctx context.Context, name string, kind domain.Kind) (domain.Ping, error) {
 	var result domain.Ping
 	err := database.WithTx(ctx, r.pool, func(ctx context.Context, tx pgx.Tx) error {
 		row, err := ping.New(tx).Upsert(ctx, ping.UpsertParams{
@@ -36,7 +36,7 @@ func (r *Repository) Upsert(ctx context.Context, name string, kind domain.Kind) 
 	return result, err
 }
 
-func (r *Repository) List(ctx context.Context) ([]domain.Ping, error) {
+func (r *PostgresRepository) List(ctx context.Context) ([]domain.Ping, error) {
 	var pings []domain.Ping
 	err := database.WithTx(ctx, r.pool, func(ctx context.Context, tx pgx.Tx) error {
 		rows, err := ping.New(tx).List(ctx)
