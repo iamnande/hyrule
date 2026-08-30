@@ -24,6 +24,55 @@ what's not decided or not built yet.
   toolchain (e.g. grpc-gateway + protoc-gen-openapiv2) against, so this
   stays a spike, not a decision, until one does
 
+## decisions pending write-up
+
+already decided (in conversation, not yet in `docs/`) - each just needs
+the actual doc written, not more deciding. tracked separately from `next
+steps` above since none of this is open backlog, it's doc debt on top of
+settled direction.
+
+- public/internal API visibility (new decision doc): only `api`, `cli`
+  (via `api`), `bff`, and `mcp` get public ingress - every other service
+  (`pings`, `iam-jwks`, whatever's next) is internal-only, cluster-local
+  or ngrok-reachable by exception, decided per service as it comes up.
+  each service gets its own `api/<service>/{public,internal}/` contracts
+  (populated with only what that service actually needs - most will only
+  ever have `internal/`), and isolated routers in the Go API layer
+  (`InternalXyzAPI` vs `XyzAPI`, not one router serving both) so that
+  authz/scopes/ABAC lands later without having to split an
+  already-mixed router apart. `iam-jwks` is the first concrete case:
+  `api` hits its JWKS endpoint behind the scenes, it gets no public
+  endpoint of its own - possibly gRPC instead of HTTP once the dual
+  listener below exists, still open
+- standardized dual listener (new decision doc): every service gets
+  HTTP `:8000` always, gRPC `:9000` opt-in - scoped to the
+  transport-layer plumbing only (`runtime.NewModule`, the `app` chart,
+  per-port probes). does not decide the proto-to-OAS contract-generation
+  spike above; `iam-jwks` (internal-only, see above) is a plausible
+  first gRPC-only candidate once this exists
+- resource-sizing addendum: no bin-packing or affinity rules yet, same
+  static-sizing reasoning [0018](decisions/0018-resource-sizing-autoscaling.md)
+  already used for HPA/VPA - homelab-scale, not enough real multi-node
+  topology or replica counts for either to matter. revisit with real
+  evidence, not before
+- fx constructor convention, into conventions.md: a Params struct
+  (`fx.In`) over positional args, even at one or two params today -
+  forward-looking, no downside at the current arg counts
+- module.go convention, into conventions.md: a service's `module.go`
+  holds only the `fx.Module(...)` declaration, nothing else - every
+  other constructor (the domain wiring, the API handler wiring) moves to
+  its own named file. already applied in code - pings' `newRegistry`
+  moved to `registry.go`, `newAPIHandler`/`apiHandlerResult` to
+  `handler.go`; iam-jwks' `newKeySet` to `keyset.go`, same `handler.go`
+  split
+- domain/repository naming convention, into conventions.md: name a
+  domain's core type for what it does, not `Service`; name a repository
+  for its backend once more than one is real or anticipated. already
+  applied in code - `pings.domain.Service` -> `Registry`,
+  `iam-jwks.domain.Service` -> `KeySet`, `pings.repository.Repository`
+  -> `PostgresRepository` (matching `iam-jwks`'s existing
+  `EnvRepository`)
+
 ## open decisions (pre-ArgoCD gap review)
 
 stubs, not decisions yet - context and the open question only, each to be
@@ -71,28 +120,30 @@ real deploy.
    same job - closes the gap already on record in
    [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
 
-### 2. iam-jwks: real domain - done
+### 2. bff steel-thread
 
-[0007](decisions/0007-iam-jwks-key-distribution.md): the source of truth
-is a 1Password vault, region-local propagation is External Secrets
-Operator's job (see [0011](decisions/0011-secrets-generalized.md) - off
-the shelf, restarts on rotation via a paired reloader), and `iam-jwks`
-itself just reads a local mount and caches in memory. no poll/push/
-eventing code belongs in this service.
+a new service backing the homelab UI/dashboard - browser talks only to
+it, never to `pings` or any other internal service directly (see
+[decisions pending write-up](#decisions-pending-write-up) above). proves
+the first real inter-service call in this repo: a generated client
+against `pings`'s internal contract, plus the call convention itself
+(base URL via [0014](decisions/0014-namespacing.md)'s namespace DNS,
+timeouts, tracing/logging context propagation) - none of which exists
+yet. worked in its own thread when picked up, not bundled with anything
+else on this list.
 
-1. ~~domain + `KeyStore` interface + a postgres-backed implementation for
-   local dev (`hyrule_app_ro`, strict `SELECT`-only) + migration for the
-   keys table~~ - done.
-2. ~~the real API: `GET /.well-known/jwks.json`, EdDSA/Ed25519 JWKs (RFC
-   8037), oapi-codegen wiring, handlers, integration tests~~ - done.
-3. ~~the secret-file-backed `KeyStore` implementation, wired in behind
-   config~~ - done: `go/cmd/iam-jwks/app.Module(fileCfg)` picks
-   `svc.WithFileStore()` when `HYRULE_IAM_JWKS_KEYS_FILE_PATH` is set,
-   `svc.WithPostgres()` otherwise - no database wiring at all in
-   file-backed mode. the 1Password Connect server + External Secrets
-   Operator themselves are still separate infrastructure work, tracked
-   under infrastructure below, sequenced behind there being a second real
-   region to test against.
+1. the two pending decision docs above (public/internal API visibility,
+   dual listener) block this - `pings` needs its internal contract split
+   out before there's anything to generate a client against.
+2. `make new-service` the `bff` service; no domain/API scaffolded yet,
+   same as any new service.
+3. the inter-service call convention itself - base URL resolution,
+   timeouts, context propagation - doesn't exist anywhere in this repo
+   today, this is the first consumer.
+4. the generated client against `pings`'s internal contract, wired into
+   `bff`'s own domain layer.
+5. demo the steel-thread end to end: browser -> `bff` -> `pings`,
+   nothing else in the path yet.
 
 ### 3. first real homelab deploy of pings
 
@@ -196,17 +247,16 @@ purpose, same reason as initiative 3.
 
 ### platform
 
-- `iam-jwks` real domain + `KeyStore` interface (initiative 2) -
-  [0007](decisions/0007-iam-jwks-key-distribution.md) found this isn't
-  the service that proves out eventing after all: 1Password's own
-  replication plus External Secrets Operator + a reloader's
-  restart-on-change ([0011](decisions/0011-secrets-generalized.md))
-  already solves key distribution, no stream needed
+- `bff` steel-thread (initiative 2)
 - Kafka/Flink/normalized eventing with versioned schemas is still the
   direction for cross-service data movement generally, based on how this
   has been built before - it needs a real service with an actual
   streaming/fan-out problem to get proven out on, not a payload this
-  small; nothing currently in flight is that service yet
+  small; nothing currently in flight is that service yet. `iam-jwks`
+  turned out not to be that service - 1Password's own replication plus
+  External Secrets Operator + a reloader's restart-on-change
+  ([0011](decisions/0011-secrets-generalized.md)) already solves key
+  distribution, no stream needed
 
 ### product
 
