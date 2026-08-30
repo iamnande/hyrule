@@ -7,7 +7,6 @@ import (
 	"go.uber.org/fx/fxtest"
 
 	iamJwksAPI "github.com/iamnande/hyrule/go/cmd/iam-jwks/app"
-	"github.com/iamnande/hyrule/go/internal/svc/iam-jwks/repository"
 )
 
 type TestIamJwks struct {
@@ -16,7 +15,7 @@ type TestIamJwks struct {
 }
 
 func NewTestIamJwks(opts ...fx.Option) TestIamJwks {
-	test := constructTestAPI([]fx.Option{fx.Provide(repository.LoadEnvConfig), iamJwksAPI.Module}, opts...)
+	test := constructTestAPI([]fx.Option{iamJwksAPI.Module}, opts...)
 	return TestIamJwks{
 		API: test.API,
 		App: test.App,

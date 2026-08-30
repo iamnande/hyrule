@@ -55,6 +55,7 @@ package app
 import (
 	"go.uber.org/fx"
 
+	"github.com/iamnande/hyrule/go/internal/lib/config"
 	"github.com/iamnande/hyrule/go/internal/lib/database"
 	"github.com/iamnande/hyrule/go/internal/lib/rest/capabilities/health"
 	svc "github.com/iamnande/hyrule/go/internal/svc/${SLUG}"
@@ -63,34 +64,11 @@ import (
 const Name = "${SLUG}"
 
 var Module = fx.Module(Name,
-	fx.Supply(health.Probes{
-		Startup:   health.DefaultHandler,
-		Liveness:  health.DefaultHandler,
-		Readiness: health.DefaultHandler,
-	}),
+	fx.Supply(health.DefaultProbes),
+	fx.Provide(config.LoadDatabase()),
 	database.Module,
 	svc.Module,
 )
-EOF
-	cat >"go/cmd/${SLUG}/main.go" <<EOF
-package main
-
-import (
-	"go.uber.org/fx"
-
-	"github.com/iamnande/hyrule/go/cmd/${SLUG}/app"
-	"github.com/iamnande/hyrule/go/internal/lib/config"
-	"github.com/iamnande/hyrule/go/internal/lib/runtime"
-)
-
-func main() {
-	fx.New(
-		runtime.NewModule(app.Name),
-		config.BaseModule,
-		fx.Provide(config.LoadDatabase()),
-		app.Module,
-	).Run()
-}
 EOF
 	cat >"deploy/values/${SLUG}/values.yaml" <<EOF
 app:
@@ -137,32 +115,9 @@ import (
 const Name = "${SLUG}"
 
 var Module = fx.Module(Name,
-	fx.Supply(health.Probes{
-		Startup:   health.DefaultHandler,
-		Liveness:  health.DefaultHandler,
-		Readiness: health.DefaultHandler,
-	}),
+	fx.Supply(health.DefaultProbes),
 	svc.Module,
 )
-EOF
-	cat >"go/cmd/${SLUG}/main.go" <<EOF
-package main
-
-import (
-	"go.uber.org/fx"
-
-	"github.com/iamnande/hyrule/go/cmd/${SLUG}/app"
-	"github.com/iamnande/hyrule/go/internal/lib/config"
-	"github.com/iamnande/hyrule/go/internal/lib/runtime"
-)
-
-func main() {
-	fx.New(
-		runtime.NewModule(app.Name),
-		config.BaseModule,
-		app.Module,
-	).Run()
-}
 EOF
 	cat >"deploy/values/${SLUG}/values.yaml" <<EOF
 app:
@@ -190,6 +145,26 @@ app:
 platform: {}
 EOF
 fi
+
+cat >"go/cmd/${SLUG}/main.go" <<EOF
+package main
+
+import (
+	"go.uber.org/fx"
+
+	"github.com/iamnande/hyrule/go/cmd/${SLUG}/app"
+	"github.com/iamnande/hyrule/go/internal/lib/config"
+	"github.com/iamnande/hyrule/go/internal/lib/runtime"
+)
+
+func main() {
+	fx.New(
+		runtime.NewModule(app.Name),
+		config.BaseModule,
+		app.Module,
+	).Run()
+}
+EOF
 
 cat >"api/${SLUG}/openapi.yaml" <<EOF
 openapi: 3.0.3

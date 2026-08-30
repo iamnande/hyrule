@@ -11,8 +11,6 @@ import (
 	iamJwksAPI "github.com/iamnande/hyrule/go/cmd/iam-jwks/app"
 	pingsAPI "github.com/iamnande/hyrule/go/cmd/pings/app"
 	"github.com/iamnande/hyrule/go/internal/lib/runtime"
-	"github.com/iamnande/hyrule/go/internal/svc/iam-jwks/repository"
-	pingsDomain "github.com/iamnande/hyrule/go/internal/svc/pings/domain"
 	"github.com/iamnande/hyrule/go/tests/utils"
 )
 
@@ -37,12 +35,12 @@ var _ = DescribeTable("Entrypoint",
 	},
 	Entry(
 		"Pings",
-		[]fx.Option{runtime.NewModule(pingsAPI.Name), pingsAPI.Module, fx.Provide(pingsDomain.LoadConfig)},
+		[]fx.Option{runtime.NewModule(pingsAPI.Name), pingsAPI.Module},
 		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
 	),
 	Entry(
 		"IamJwks",
-		[]fx.Option{runtime.NewModule(iamJwksAPI.Name), iamJwksAPI.Module, fx.Provide(repository.LoadEnvConfig)},
+		[]fx.Option{runtime.NewModule(iamJwksAPI.Name), iamJwksAPI.Module},
 		fx.Invoke(func(app fx.Shutdowner) { _ = app.Shutdown() }),
 	),
 )

@@ -3,19 +3,19 @@ package app
 import (
 	"go.uber.org/fx"
 
+	"github.com/iamnande/hyrule/go/internal/lib/config"
 	"github.com/iamnande/hyrule/go/internal/lib/database"
 	"github.com/iamnande/hyrule/go/internal/lib/rest/capabilities/health"
 	"github.com/iamnande/hyrule/go/internal/svc/pings"
+	"github.com/iamnande/hyrule/go/internal/svc/pings/domain"
 )
 
 const Name = "pings"
 
 var Module = fx.Module(Name,
-	fx.Supply(health.Probes{
-		Startup:   health.DefaultHandler,
-		Liveness:  health.DefaultHandler,
-		Readiness: health.DefaultHandler,
-	}),
+	fx.Supply(health.DefaultProbes),
+	fx.Provide(config.LoadDatabase()),
+	fx.Provide(domain.LoadConfig),
 	database.Module,
 	pings.Module,
 )

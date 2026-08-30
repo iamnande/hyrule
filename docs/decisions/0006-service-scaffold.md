@@ -41,8 +41,9 @@ in `sqlc.yaml`.
 every service's baseline config - a database-less service doesn't need
 that coupling. renamed to `BaseModule` (deployment, tracing, HTTP server
 only); anything that wires in `database.Module` also provides
-`config.LoadDatabase()` itself, same as `go/cmd/<slug>/main.go` does for a
-database-backed service.
+`config.LoadDatabase()` itself, alongside it in `go/cmd/<slug>/app/module.go` -
+`main.go` itself is identical across every service, database-backed or
+not, and never needs hand-editing.
 
 ## the Tiltfile discovers services, it doesn't list them
 

@@ -14,6 +14,5 @@ func TestConfigs() []fx.Option {
 			Environment: config.LocalEnvironment,
 		}),
 		fx.Supply(config.HTTPServer{Addr: ":0"}),
-		fx.Provide(config.LoadDatabase()),
 	}
 }

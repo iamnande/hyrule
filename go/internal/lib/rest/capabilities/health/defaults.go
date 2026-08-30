@@ -20,4 +20,12 @@ var (
 	DefaultHandler = func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
+
+	// DefaultProbes wires DefaultHandler into all three probes - the
+	// starting point for a service with no real dependency checks yet.
+	DefaultProbes = Probes{
+		Startup:   DefaultHandler,
+		Liveness:  DefaultHandler,
+		Readiness: DefaultHandler,
+	}
 )
