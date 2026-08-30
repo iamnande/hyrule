@@ -99,7 +99,7 @@ don't block a deploy but have sat undecided regardless.
 14. ~~[0021: shell script style](decisions/0021-shell-script-style.md)~~ - decided.
 15. ~~[0022: Helm / YAML style](decisions/0022-helm-yaml-style.md)~~ - decided.
 
-## next 3 initiatives
+## initiatives
 
 ### 1. CI coverage for the k3s/Tilt/Helm path
 
@@ -162,15 +162,36 @@ inside this repo.
    it actually happened - probably a new decision doc once it's real
    instead of theoretical.
 
-### 4. stand up Harbor + 1Password Connect + ESO, local and CP
+### 4. security adversarial review of architecture + roadmap
+
+sequenced deliberately: after initiative 3, because that's the first
+point there's real homelab infrastructure to review against instead of
+local-only/theoretical; before initiative 5, because Harbor introduces a
+self-hosted GitHub Actions runner with network access to both GitHub and
+Harbor plus real secret flow (1Password Connect + ESO) - exactly where a
+security gap stops being theoretical and starts having real blast
+radius. findings here should shape how initiative 5 gets built, not get
+retrofitted onto it afterward.
+
+covers the architecture and this roadmap directly, not just one
+component - RBAC/namespace boundaries ([0014](decisions/0014-namespacing.md)),
+secrets handling ([0011](decisions/0011-secrets-generalized.md)),
+ingress/edge trust ([0013](decisions/0013-ingress-dns-tls.md),
+[0015](decisions/0015-authn-authz.md)), and whether cluster-level policy
+enforcement (Kyverno or similar - see
+[infrastructure](#infrastructure) below) is actually needed and what it
+should enforce, rather than guessed at ahead of the review.
+
+### 5. stand up Harbor + 1Password Connect + ESO, local and CP
 
 [0010](decisions/0010-image-registry-and-publishing.md) and
 [0011](decisions/0011-secrets-generalized.md) decided the shape - Harbor
 everywhere (local push/pull too, not just CP), 1Password Connect + External
 Secrets Operator everywhere too, no cloud-managed stand-ins for either.
 neither is built yet; both need real credentials/infrastructure a decision
-doc can't supply. least concretely scoped of the four initiatives on
-purpose, same reason as initiative 3.
+doc can't supply. least concretely scoped of these initiatives on
+purpose, same reason as initiative 3 - also gated behind initiative 4
+now, not just under-scoped.
 
 1. Harbor: install via its own chart in the local cluster and CP
    (`us-west-2`), sort out TLS trust for local `nerdctl` push/pull against
@@ -214,6 +235,11 @@ purpose, same reason as initiative 3.
 
 ### infrastructure
 
+- Kyverno (or similar) for cluster-level policy enforcement / admission
+  control - no admission control exists in the cluster today. what it
+  should actually enforce (and whether Kyverno specifically is the right
+  tool) is a question for initiative 4's security review, not decided
+  ahead of it
 - CI coverage for the k3s/Tilt/Helm path (initiative 1)
 - `hyrule_app_ro` postgres role - strict `SELECT`-only, for consumers that
   should never be able to write regardless of physical topology
