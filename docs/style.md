@@ -13,7 +13,7 @@ here it's not a default, it's a lint-me-eventually hard rule (see
 docs/conventions.md#known-gaps).
 
 ```go
-// bad - internal/svc/pings/repository/pings.go defining its own interface
+// bad - go/internal/svc/pings/repository/pings.go defining its own interface
 // next to the type that implements it. every caller pays for methods it
 // doesn't use, and "mock the interface" means implementing all of them.
 package repository

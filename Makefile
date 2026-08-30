@@ -17,7 +17,6 @@ SERVICE_NAME ?= pings
 # make: container engine - prefer docker if present, fall back to podman.
 # every target below goes through this rather than hardcoding either.
 CONTAINER_ENGINE := $(shell command -v docker >/dev/null 2>&1 && echo docker || echo podman)
-COMPOSE           = $(CONTAINER_ENGINE) compose -f stack/compose.yml
 
 .DEFAULT_GOAL := help
 .PHONY: help

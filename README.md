@@ -7,8 +7,8 @@ working code. see [docs/architecture.md](docs/architecture.md) for the why.
 
 | service | entrypoint | what it does |
 |---|---|---|
-| `pings` | `cmd/pings` | a lightweight registry of homelab apps/services/hosts - a thing self-reports by pinging |
-| `iam-jwks` | `cmd/iam-jwks` | JSON Web Key Set used to verify JWTs |
+| `pings` | `go/cmd/pings` | a lightweight registry of homelab apps/services/hosts - a thing self-reports by pinging |
+| `iam-jwks` | `go/cmd/iam-jwks` | JSON Web Key Set used to verify JWTs |
 
 ## running it
 
@@ -19,14 +19,12 @@ make build       # compile pings for the local machine
 make run         # go run pings locally
 make image-build # build the pings container image
 make image-run   # run the built image locally
-make stack-up    # start the local dependency stack (see stack/compose.yml)
-make stack-down  # stop it
 make new-service # scaffold a new service (see docs/decisions/0006-service-scaffold.md)
 make help        # everything else
 ```
 
-`SERVICE_NAME` selects which service under `cmd/` a target targets, defaults
-to `pings`: `make run SERVICE_NAME=other-service`.
+`SERVICE_NAME` selects which service under `go/cmd/` a target targets,
+defaults to `pings`: `make run SERVICE_NAME=other-service`.
 
 ### running against a real local cluster
 
@@ -69,23 +67,27 @@ every service gets these for free via `runtime.NewModule`:
 ## requirements
 
 - `make bootstrap` handles the rest (installs [mise](https://mise.jdx.dev/), provisions Go/Helm/Tilt at the versions pinned in `mise.toml`)
-- `docker` or `podman` for `make stack-*` (either works - `make` picks whichever is on `PATH`, preferring `docker`)
+- `docker` or `podman` for `make db-*` (either works - `make` picks whichever is on `PATH`, preferring `docker`)
 - [Rancher Desktop](https://rancherdesktop.io/) (containerd mode) for `make cluster-*`/`make dev` - see [docs/decisions/0004](docs/decisions/0004-local-cluster.md)
 
 ## configuration
 
 no `.env` file, ever - config comes from real environment variables, and
 local defaults already cover the common case (see any `envDefault` tag under
-`internal/lib/config`). local-only values (like the compose stack's database
-credentials) are hardcoded directly where they're used, since they're not
-secrets. for anything that actually is one, inject it at invocation time
-(e.g. `op run -- make run`) - nothing secret should ever touch disk.
+`go/internal/lib/config`). local-only values (like the standalone test
+database's credentials) are hardcoded directly where they're used, since
+they're not secrets. for anything that actually is one, inject it at
+invocation time (e.g. `op run -- make run`) - nothing secret should ever
+touch disk.
 
 ## tests
 
 ```
-make test-unit         # ./internal/...
-make test-integration  # ./tests/...
+make test-unit         # ./go/internal/...
+make test-integration  # ./go/tests/...
 make test-lint         # golangci-lint
 make test-smoke        # build+run the real binary, curl it, stop it
 ```
+
+`test-integration` and `test-smoke` need a reachable postgres - `make db-up`
+starts one standalone (no cluster required), `make db-down` stops it.

@@ -38,7 +38,12 @@ probes:
     enabled: true
     path: /readyz
 
-resources: {}
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
 
 env: {}
 extraEnv: []

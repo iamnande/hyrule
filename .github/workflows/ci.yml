@@ -31,11 +31,11 @@ jobs:
         run: |
           curl -sSL https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xz
           sudo mv migrate /usr/local/bin/migrate
-      - run: make stack-up
+      - run: make db-up
       - run: make db-migrate-up
       - run: make test-integration
       - if: always()
-        run: make stack-down
+        run: make db-down
 
   smoke:
     runs-on: ubuntu-latest
@@ -46,8 +46,8 @@ jobs:
         run: |
           curl -sSL https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz | tar xz
           sudo mv migrate /usr/local/bin/migrate
-      - run: make stack-up
+      - run: make db-up
       - run: make db-migrate-up
       - run: make test-smoke
       - if: always()
-        run: make stack-down
+        run: make db-down

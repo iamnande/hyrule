@@ -1,6 +1,6 @@
 BUILD_DIR := build
 
-GO_VERSION_PACKAGE := $(PROJECT_REPO_URL)/internal/lib/version
+GO_VERSION_PACKAGE := $(PROJECT_REPO_URL)/go/internal/lib/version
 
 GO_LDFLAGS += '
 GO_LDFLAGS += -X $(GO_VERSION_PACKAGE).ServiceCommit=$(PROJECT_COMMIT)
@@ -11,7 +11,7 @@ GO_LDFLAGS += '
 
 .PHONY: build
 build: ## build: compile the target service for the local machine
-	@go build -ldflags $(GO_LDFLAGS) -o $(BUILD_DIR)/$(SERVICE_NAME) ./cmd/$(SERVICE_NAME)
+	@go build -ldflags $(GO_LDFLAGS) -o $(BUILD_DIR)/$(SERVICE_NAME) ./go/cmd/$(SERVICE_NAME)
 
 .PHONY: image-build
 image-build: ## build: build the target service's container image
@@ -24,7 +24,7 @@ image-build: ## build: build the target service's container image
 		--build-arg PROJECT_REPO_URL=$(PROJECT_REPO_URL) \
 		--build-arg GO_VERSION_PACKAGE=$(GO_VERSION_PACKAGE) \
 		--build-arg BUILD_DATETIME=$(shell date -u +%Y-%m-%dT%H:%M:%SZ) \
-		-f cmd/Dockerfile \
+		-f go/cmd/Dockerfile \
 		-t $(ORG_NAME)/$(SERVICE_NAME):$(PROJECT_VERSION) \
 		.
 

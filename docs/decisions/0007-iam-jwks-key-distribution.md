@@ -1,5 +1,15 @@
 # 0007: iam-jwks key distribution - 1Password + the platform chart, not a sync protocol
 
+**superseded by [0011](0011-secrets-generalized.md)** in two ways:
+1Password (via a self-hosted Connect server) stays the source of truth,
+but the operator syncing it into a K8s `Secret` is External Secrets
+Operator now, not `onepassword-operator`; and the two `KeyStore`
+implementations below (postgres-backed, secret-file-backed) collapse
+into one env-var-backed implementation, since local dev now runs the
+same secrets pipeline as prod instead of needing a lighter-weight
+stand-in. the `KeyStore` interface itself, and 1Password as the source of
+truth, are unaffected.
+
 the signing key's source of truth is a 1Password vault, not postgres and
 not a custom store. registering the key as a vault item is the rotation
 event - everything downstream reacts to that, nothing polls or pushes on
@@ -38,7 +48,7 @@ concrete types). two implementations satisfy it:
   Secret volume at startup, nothing else.
 
 which one gets wired in is a composition-root concern, not a runtime
-branch inside the domain: `cmd/iam-jwks/app.Module(fileCfg)` picks
+branch inside the domain: `go/cmd/iam-jwks/app.Module(fileCfg)` picks
 `svc.WithFileStore()` when `HYRULE_IAM_JWKS_KEYS_FILE_PATH` is set,
 `svc.WithPostgres()` (plus `database.Module`) otherwise - the file path
 being set is the only signal, no separate mode flag to keep in sync

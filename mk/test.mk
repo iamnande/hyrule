@@ -19,7 +19,7 @@ test-unit: ## test: execute unit test suite
 		-covermode=atomic \
 		-coverpkg=./... \
 		-coverprofile=$(UNIT_TEST_COVERAGE_PATH) \
-		./internal/... $(UNIT_TEST_OPTS)
+		./go/internal/... $(UNIT_TEST_OPTS)
 	@go tool cover -func=$(UNIT_TEST_COVERAGE_PATH)
 	@go tool cover -html=$(UNIT_TEST_COVERAGE_PATH) -o $(UNIT_TEST_COVERAGE_HTML)
 
@@ -35,13 +35,13 @@ test-integration: ## test: execute integration test suite
 		--race \
 		--randomize-all \
 		--procs=$(INTEGRATION_TEST_PROCS) \
-		./tests $(INTEGRATION_TEST_OPTS)
+		./go/tests $(INTEGRATION_TEST_OPTS)
 
 .PHONY: test-smoke
 SMOKE_BIN := /tmp/hyrule-smoke-$(SERVICE_NAME)
 test-smoke: ## test: build+run the target service for real, curl /discovery and /readyz, stop it
 	@echo $(PROJECT_LOG_FMT) "smoke testing $(SERVICE_NAME)"
-	@go build -ldflags $(GO_LDFLAGS) -o $(SMOKE_BIN) ./cmd/$(SERVICE_NAME); \
+	@go build -ldflags $(GO_LDFLAGS) -o $(SMOKE_BIN) ./go/cmd/$(SERVICE_NAME); \
 	$(SMOKE_BIN) & \
 	pid=$$!; \
 	trap "kill $$pid 2>/dev/null; rm -f $(SMOKE_BIN)" EXIT; \

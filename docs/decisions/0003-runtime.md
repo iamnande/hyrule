@@ -8,7 +8,7 @@ conformant Kubernetes distribution - same API, same manifests, same
 `kubectl`/Helm - just single-binary, lower footprint, and batteries
 included (embedded containerd, `local-path-provisioner`, a lightweight
 `ServiceLB`, Traefik ingress by default). nothing about hyrule's shape
-(one `internal/svc/<name>` + one `deploy/values/<name>` against the
+(one `go/internal/svc/<name>` + one `deploy/values/<name>` against the
 shared chart, see [0005](0005-helm-chart-split.md)) depends on which
 distribution runs it.
 

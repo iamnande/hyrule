@@ -6,13 +6,13 @@ sits inside; this doc is where topic depth actually lives.
 
 ## packages
 
-- `internal/lib` - shared, no domain knowledge
-- `internal/svc/<name>` - one service's own domain/api/data
-- `cmd/<name>` - that service's entrypoint
+- `go/internal/lib` - shared, no domain knowledge
+- `go/internal/svc/<name>` - one service's own domain/api/data
+- `go/cmd/<name>` - that service's entrypoint
 
 see [architecture.md#service-topology](architecture.md#service-topology) for
-the full shape. new service = new `internal/svc/<name>` + `cmd/<name>`,
-following an existing one exactly; `internal/lib` shouldn't need to change.
+the full shape. new service = new `go/internal/svc/<name>` + `go/cmd/<name>`,
+following an existing one exactly; `go/internal/lib` shouldn't need to change.
 `make new-service` scaffolds the wiring (not the domain logic) for a new
 service - see [0006-service-scaffold](decisions/0006-service-scaffold.md).
 
@@ -24,7 +24,7 @@ only an interface to satisfy.
 
 ## fx
 
-- **config loading happens at the composition root** (`cmd/<name>/main.go`),
+- **config loading happens at the composition root** (`go/cmd/<name>/main.go`),
   not inside a service's own `Module`. a service's `Module` is logic and
   wiring only - keeping config loading separate is what lets tests supply
   fixed values directly instead of overriding real ones.
@@ -74,14 +74,14 @@ implement the generated interface. the spec is written and reviewed before
 the handler exists.
 
 **the spec lives at `api/<service>/openapi.yaml`** - a top-level `api/`
-tree, not tucked inside `internal/svc/<service>/api/`. it's the contract a
+tree, not tucked inside `go/internal/svc/<service>/api/`. it's the contract a
 client reads, not an implementation detail of the Go package that happens
-to generate code from it; `internal/svc/<service>/api/` stays Go-only (the
+to generate code from it; `go/internal/svc/<service>/api/` stays Go-only (the
 codegen config, generated types, and handlers).
 
 **errors are catalog entries, not inline literals.** every distinct error
 is a `Definition` (code, name, message, status) in one registry
-(`internal/lib/rest/transport/errors/registry.go`), looked up by code -
+(`go/internal/lib/rest/transport/errors/registry.go`), looked up by code -
 never a `BaseError{...}` struct literal hand-typed at each call site.
 shaped after [ngrok's error reference](https://ngrok.com/docs/errors/reference):
 stable enough to depend on, one code per class of failure. hand-written
@@ -169,7 +169,7 @@ for the aggregate dependency view instead.
 - hard/soft dependency checks (`/healthz`) feed operator diagnostics, never
   the probes themselves.
 
-see [internal/lib/rest/capabilities/health/doc.go](../internal/lib/rest/capabilities/health/doc.go)
+see [go/internal/lib/rest/capabilities/health/doc.go](../go/internal/lib/rest/capabilities/health/doc.go)
 for the implementation.
 
 ## tracing
@@ -179,7 +179,7 @@ e.g. `dependencies.check.all`, `dependencies.check.database`. one
 separator, not whatever felt right at the call site - colons snuck in early
 and it was a mess.
 
-[internal/lib/tracing](../internal/lib/tracing) gives you three ways to
+[go/internal/lib/tracing](../go/internal/lib/tracing) gives you three ways to
 start a span, cheapest first:
 
 - `tracing.Start(ctx)` - the default. names itself after the calling
@@ -214,7 +214,7 @@ query got complex, then the abstraction fought back. instead:
 - every repository call runs inside an explicit transaction, even a single
   `SELECT` - RLS policies key off session GUCs (`SET LOCAL app.account_id =
   ...`), which only live for the current transaction. `database.WithTx`
-  (`internal/lib/database/tx.go`) is that helper, with the GUC step
+  (`go/internal/lib/database/tx.go`) is that helper, with the GUC step
   (`setGUCs`) a no-op today. building this now means adding a real policy
   later is additive; building it later means reworking every repository
   call site.
@@ -223,7 +223,7 @@ query got complex, then the abstraction fought back. instead:
   superusers unless `FORCE ROW LEVEL SECURITY` is set, and it's an easy trap
   to inherit from whatever role created the tables in local dev. locally
   that role is bootstrapped by
-  [stack/postgres/init](../stack/postgres/init) on first container start;
+  [local/postgres/init](../local/postgres/init) on first container start;
   migrations still run as the owner role (`POSTGRES_USER`, see
   `DATABASE_URL` in `mk/database.mk`).
 - **`hyrule_app_ro` (strict `SELECT`, no write grants) is for a service
@@ -231,7 +231,7 @@ query got complex, then the abstraction fought back. instead:
   not just in application code** - `iam-jwks` is the first to use it (see
   [0007](decisions/0007-iam-jwks-key-distribution.md)). bootstrapped
   alongside `hyrule_app` in
-  [stack/postgres/init](../stack/postgres/init).
+  [local/postgres/init](../local/postgres/init).
 - entities that have an *owner* (account/workspace/user/team, when they
   exist) get their scoping column in their first migration, populated from
   day one, even before any policy references it. `pings` does not get one -
@@ -239,7 +239,7 @@ query got complex, then the abstraction fought back. instead:
   with nothing to scope by is the over-application of this pattern, not the
   point of it.
 - the health package's dependency check is a direct `pgx` ping
-  (`internal/lib/database/health.go`), replacing the old `dynamodb.Scan`
+  (`go/internal/lib/database/health.go`), replacing the old `dynamodb.Scan`
   call. not generalized behind a cross-backend interface - there's exactly
   one backend to support, and building that abstraction before a second
   backend exists is premature.
@@ -274,7 +274,7 @@ cheap to avoid by never letting a query ship unindexed in the first place.
 
 ## testing
 
-**`test-unit` (`./internal/...`) vs `test-integration`** (`./tests/...`,
+**`test-unit` (`./go/internal/...`) vs `test-integration`** (`./go/tests/...`,
 against the real local stack). anything that can't be faked (RLS, above) is
 integration-only, never mocked - it's enforced by the postgres engine
 itself.
@@ -299,9 +299,10 @@ ginkgo`), not plain `go test`:
 ## config
 
 **no `.env`, ever.** real environment variables, sane `envDefault` tags
-cover local dev. local-only values (compose stack credentials) get
-hardcoded where they're used - they aren't secrets. real secrets get
-injected at invocation time (e.g. `op run -- make run`), never touch disk.
+cover local dev. local-only values (the standalone test database's
+credentials) get hardcoded where they're used - they aren't secrets. real
+secrets get injected at invocation time (e.g. `op run -- make run`), never
+touch disk.
 
 ## container image
 
@@ -309,7 +310,8 @@ injected at invocation time (e.g. `op run -- make run`), never touch disk.
   `gcr.io/distroless/base` or `-static`. `base` (no suffix) was verified to
   ship a busybox toolkit baked into its filesystem on the digest tested
   here - the opposite of what "distroless" is for. `-static` has no CA
-  certificates, which breaks outbound HTTPS (Sentry). `-debian12` is the
+  certificates, which breaks outbound HTTPS (e.g. 1Password Connect
+  syncing from the cloud vault). `-debian12` is the
   one that's actually both minimal and functional.
 - **`TARGETOS`/`TARGETARCH`, not `TARGET_OS`/`TARGET_ARCH`** - those are
   buildkit/buildah-reserved arg names, auto-populated from `--platform`.
@@ -320,6 +322,19 @@ injected at invocation time (e.g. `op run -- make run`), never touch disk.
   fixed path**, not `${SERVICE_NAME}` - the exec-form `ENTRYPOINT` below it
   doesn't get build-arg substitution, so a parameterized path there would
   silently break.
+
+## shell scripts
+
+for everything general, defer to the
+[Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) -
+same approach [style.md](style.md) takes for Go, no repo-specific rule
+harder than the guide yet. [local/new-service.sh](../local/new-service.sh)
+already follows it (`set -euo pipefail`, `[[ ]]` over `[ ]`, quoted
+expansions) - worth keeping true as more scripts show up, not a new
+requirement.
+
+`shellcheck` isn't wired into CI's `lint` job yet - see
+[known gaps](#known-gaps).
 
 ## commits
 
@@ -339,7 +354,9 @@ feat(*)!: new hyrule, who dis
 - errors wrapped with `%w` and enough context to debug without a stack
   trace (`errorlint` catches the worst drift here - see `.golangci.yml`)
 - structured logging via `slog`
-- sentry spans around domain-level operations
+- tracing spans around domain-level operations (see
+  [0016](decisions/0016-observability-backend.md) for the backend - the
+  span-naming rule below doesn't depend on which one)
 
 the latter two aren't enforced by tooling yet, so it's easy to drift from
 without noticing - this is the reminder.
@@ -352,13 +369,13 @@ jobs (`lint`, `unit`, `integration`, `smoke`).
 - **no `needs:` chaining between jobs** - they don't share expensive setup,
   so failing fast on one doesn't save meaningful time, and running them in
   parallel gets feedback faster.
-- **`integration`/`smoke` run the exact same `make stack-up` /
+- **`integration`/`smoke` run the exact same `make db-up` /
   `make db-migrate-up` / `make test-*`** a human runs locally, not a
   CI-specific reimplementation - "works in CI" and "works locally" stay the
   same claim.
 - **toolchain comes from `mise.toml` via `jdx/mise-action`**, same as
   `make bootstrap`.
-- **`make stack-up` waits for postgres by grepping `docker logs`** for
+- **`make db-up` waits for postgres by grepping `docker logs`** for
   "database system is ready to accept connections" *twice*, not
   `pg_isready`. the official postgres image starts twice on first boot -
   once to run `docker-entrypoint-initdb.d`, then it stops and restarts for
@@ -385,23 +402,29 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   committed, vendored artifacts** - run `make helm-vendor` after editing
   `app` or `platform` and commit the result, same as any other
   generated-and-committed output in this repo.
-- **`deploy/local/postgres.yaml` is dev-only** - ephemeral storage, no
-  chart, reuses every file in `stack/postgres/init/` verbatim (the
+- **`local/cluster/postgres.yaml` is dev-only** - ephemeral storage, no
+  chart, reuses every file in `local/postgres/init/` verbatim (the
   Tiltfile reads the whole directory into a ConfigMap, one key per file,
-  rather than duplicating contents or hardcoding filenames - compose
-  mounts that directory directly and runs everything in it, the Tiltfile
-  has to do the same or the two postgres paths silently drift, which is
-  exactly what happened the first time a second init file was added).
-  not a template for how a real homelab postgres should run. named
-  `hyrule-database`, not after any one
-  service - every database-backed service shares it.
+  rather than duplicating contents or hardcoding filenames - `make db-up`
+  (`mk/database.mk`) mounts that same directory directly into its
+  standalone postgres container, so the Tiltfile has to do the same or
+  the two paths silently drift, which is exactly what happened the first
+  time a second init file was added). not a template for how a real
+  homelab postgres should run. lives in its own `databases` namespace,
+  not any one service's - every database-backed service shares it, and
+  it isn't a `go/internal/svc/<name>` service itself; see
+  [0014-namespacing](decisions/0014-namespacing.md). named `postgres`
+  (two Services in front of it, `postgres-rw`/`postgres-ro` - both point
+  at the same single instance today, no real replica yet), not
+  `hyrule-database` - infra names here deliberately don't carry the repo
+  name, so a rename doesn't mean chasing it through every DNS reference.
 - **the Tiltfile discovers services from `deploy/values/*`** rather than
   listing them - see
   [0006-service-scaffold](decisions/0006-service-scaffold.md).
 - **the Tiltfile separates local-only scaffolding from the actual
-  deploy, by label** - `hyrule-database` and `migrate` are
-  `labels=['local-only']`: dev-loop scaffolding a real cluster wouldn't
-  have. every service is `labels=['deploy']`.
+  deploy, by label** - `postgres` and `migrate` are `labels=['local-only']`:
+  dev-loop scaffolding a real cluster wouldn't have. every service is
+  `labels=['deploy']`.
 - **deploy is a real `helm install`/`upgrade`, not a render-and-apply** -
   `ext://helm_resource` (`tilt-dev`'s own extension) wraps actual Helm,
   not the built-in `helm()` function (which only runs `helm template`
@@ -427,11 +450,10 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - **`migrate` runs in-cluster too, as a real `batch/v1` `Job`** - the only
   thing that still happens on the host is the image build. `migrations/`
   gets read into a `hyrule-migrations` ConfigMap the same way
-  `stack/postgres/init/` does (`configmap_from_dir`, one helper for both);
-  [deploy/local/migrate-job.yaml](../deploy/local/migrate-job.yaml) mounts
+  `local/postgres/init/` does (`configmap_from_dir`, one helper for both);
+  [local/cluster/migrate-job.yaml](../local/cluster/migrate-job.yaml) mounts
   it and runs the official `migrate/migrate` image against
-  `hyrule-database`'s in-cluster DNS name, not a port-forwarded
-  `localhost`. **`Job`s are immutable once created** - if postgres data
+  `postgres-rw`'s in-cluster DNS name, not a port-forwarded `localhost`. **`Job`s are immutable once created** - if postgres data
   ever gets reset independently of Tilt (a pod delete outside Tilt's own
   reconciliation, same trap as the postgres-init ConfigMap earlier),
   Tilt won't notice the already-"Complete" `Job` is stale on its own.
@@ -466,5 +488,12 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 - the `app` Helm chart has no `values.schema.json`/generated `README.md`
   and no `helm-unittest` suites yet - see
   [0005-helm-chart-split](decisions/0005-helm-chart-split.md#deliberately-deferred).
-- CI still runs against `stack/compose.yml`, not the k3s/Tilt loop - the
-  `deploy/helm`/Tiltfile path has no CI coverage at all yet.
+  no `helm lint`/`yamllint` anywhere either - folds into the same gap,
+  see [0022](decisions/0022-helm-yaml-style.md).
+- CI's `integration`/`smoke` jobs only need a reachable postgres
+  (`make db-up`, a standalone container - see
+  [0008](decisions/0008-repo-tree-layout.md)), not a full deploy. the
+  `deploy/helm`/Tiltfile path itself still has no CI coverage at all.
+- `shellcheck` doesn't run anywhere - one script exists today
+  ([local/new-service.sh](../local/new-service.sh)), see
+  [0021](decisions/0021-shell-script-style.md).

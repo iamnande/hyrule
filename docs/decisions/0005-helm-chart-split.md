@@ -46,7 +46,7 @@ ConfigMap-backed settings blob, no `--config` flag, nothing. every
 service's config comes in through `app`'s plain `env` map (literal env
 var names, no prefix magic - `app` has no opinion on any service's
 naming convention) plus `extraEnv`/`extraEnvFrom` for anything raw.
-pings already works this way (`internal/lib/config`, `HYRULE_*`); this
+pings already works this way (`go/internal/lib/config`, `HYRULE_*`); this
 makes it the only way, not just the default: a config file mounted from
 a ConfigMap can drift from what's actually running in a way an env var
 change can't - it only takes effect on the next rollout, same as env,
