@@ -2,6 +2,21 @@
 test-lint: ## test: run the linter
 	@golangci-lint run -v ./... --max-issues-per-linter=0 --max-same-issues=0
 
+.PHONY: test-helm
+test-helm: ## test: lint, template, and unittest all helm charts
+	@echo $(PROJECT_LOG_FMT) "testing helm charts"
+	@for chart in app platform; do \
+		helm lint deploy/helm/$$chart; \
+		helm template deploy/helm/$$chart > /dev/null; \
+	done
+	@for values in deploy/values/*/values.yaml; do \
+		helm lint deploy/helm/app-platform -f $$values; \
+		helm template deploy/helm/app-platform -f $$values > /dev/null; \
+	done
+	@for chart in app platform app-platform; do \
+		helm unittest deploy/helm/$$chart; \
+	done
+
 .PHONY: test-unit
 UNIT_TEST_COVERAGE_DIR  := $(PROJECT_WORKDIR)/coverage/unit
 UNIT_TEST_COVERAGE_PATH := $(UNIT_TEST_COVERAGE_DIR)/coverage.txt
