@@ -14,7 +14,6 @@ what's not decided or not built yet.
   actual homelab cluster, not just the local dev loop
 - decide what homelab's first real product service actually is - this
   needs your input, not a guess from this doc
-- close the `make bootstrap` gap for `golangci-lint`/`golang-migrate`/`sqlc`
 - prove RLS end to end on the first entity that actually has an owner
   (blocked on an identity service existing)
 - spike proto-to-OAS contract strategy once a real gRPC service exists -
@@ -215,9 +214,6 @@ now, not just under-scoped.
 
 ### devx
 
-- provision `golangci-lint`/`golang-migrate`/`sqlc` via `mise`, closing
-  the `make bootstrap` gap on record in
-  [conventions.md#known-gaps](conventions.md#known-gaps)
 - lint [docs/style.md](style.md)'s consumer-defined-interfaces rule -
   nothing stops a producer-side interface from creeping in today
 - `app` chart's `values.schema.json` + generated `README.md`

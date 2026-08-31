@@ -477,11 +477,7 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
 
 ## known gaps
 
-- `golangci-lint`, `golang-migrate`, and `sqlc` aren't provisioned by `make
-  bootstrap` - installed locally on faith (e.g. `brew install golangci-lint
-  golang-migrate sqlc`). CI installs `golangci-lint` and `golang-migrate`
-  itself (pinned versions, see the workflow), but `make bootstrap` still
-  doesn't. `oapi-codegen` doesn't have this problem - it's a `go.mod` tool
+- `oapi-codegen` doesn't have this problem - it's a `go.mod` tool
   dependency, invoked as `go tool oapi-codegen`.
 - [docs/style.md](style.md)'s consumer-defined-interfaces rule isn't
   linted - nothing stops a producer-side interface from creeping in.
