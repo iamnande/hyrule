@@ -1,0 +1,31 @@
+suite: platform additional objects
+templates:
+  - additional.yaml
+
+tests:
+  - it: renders nothing with default values
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: emits additionalK8sObjects verbatim
+    set:
+      additionalK8sObjects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: platform-extra
+          data:
+            key: value
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: ConfigMap
+      - equal:
+          path: metadata.name
+          value: platform-extra
+      - equal:
+          path: data.key
+          value: value

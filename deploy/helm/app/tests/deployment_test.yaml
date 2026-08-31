@@ -1,0 +1,53 @@
+suite: app deployment
+templates:
+  - deployment.yaml
+  - service.yaml
+
+tests:
+  - it: renders with default values
+    templates:
+      - deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.labels
+          value:
+            helm.sh/chart: app-0.1.0
+            app.kubernetes.io/name: RELEASE-NAME
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Helm
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet.path
+          value: /startupz
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /livez
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /readyz
+
+  - it: Service selector matches Deployment pod template labels
+    asserts:
+      - template: service.yaml
+        equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: RELEASE-NAME
+            app.kubernetes.io/instance: RELEASE-NAME
+      - template: deployment.yaml
+        equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/name: RELEASE-NAME
+            app.kubernetes.io/instance: RELEASE-NAME
+
+  - it: fails to render when image.repository is unset
+    templates:
+      - deployment.yaml
+    set:
+      image:
+        repository: null
+    asserts:
+      - failedTemplate:
+          errorMessage: "image.repository is required"
