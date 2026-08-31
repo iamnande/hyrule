@@ -8,7 +8,9 @@ read `docs/conventions.md` before making changes.
 
 Deliberate decisions in this repo - do NOT silently revert them: see
 [docs/decisions](docs/decisions). current priorities and what's not built
-yet: [docs/roadmap.md](docs/roadmap.md).
+yet: [docs/roadmap.md](docs/roadmap.md). PRDs and tech specs for planned
+initiatives live in [docs/proposals](docs/proposals), tracked normally like
+decisions - not a scratch/gitignored planning directory.
 
 ## Maintaining this file
 
