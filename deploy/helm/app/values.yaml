@@ -11,7 +11,7 @@ mode: deployment
 
 image:
   registry: ""
-  repository: ""
+  repository: docker/whalesay
   tag: latest
   pullPolicy: IfNotPresent
 

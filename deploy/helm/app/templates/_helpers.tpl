@@ -40,10 +40,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- else if .Values.image.registry }}
 {{- $registry = .Values.image.registry }}
 {{- end }}
+{{- $repository := required "image.repository is required" .Values.image.repository }}
 {{- $tag := .Values.image.tag | default "latest" }}
 {{- if $registry }}
-{{- printf "%s/%s:%s" $registry .Values.image.repository $tag }}
+{{- printf "%s/%s:%s" $registry $repository $tag }}
 {{- else }}
-{{- printf "%s:%s" .Values.image.repository $tag }}
+{{- printf "%s:%s" $repository $tag }}
 {{- end }}
 {{- end -}}
