@@ -7,8 +7,6 @@ same approach [style.md](../style.md) takes for Go. no repo-specific rule
 harder than the guide - [local/new-service.sh](../../local/new-service.sh),
 the only script that exists today, already follows it.
 
-`shellcheck` should run in CI's existing `lint` job alongside
-`golangci-lint` - not a new job, just another step in the one that
-already exists. not wired in yet; tracked in
-[conventions.md#known-gaps](../conventions.md#known-gaps) and
-[docs/roadmap.md](../roadmap.md#devx).
+`shellcheck` runs in CI's existing `lint` job alongside `golangci-lint` -
+not a new job, just another step in the one that already exists. pinned
+in [mise.toml](../../mise.toml) like the repo's other tools.

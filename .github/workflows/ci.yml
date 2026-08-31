@@ -14,6 +14,7 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13.1
+      - run: shellcheck $(find . -name '*.sh' -not -path './.git/*')
 
   unit:
     runs-on: ubuntu-latest

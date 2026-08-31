@@ -226,8 +226,6 @@ now, not just under-scoped.
   service needs one; replaces the single `_pod.tpl`/`app.pod` partial
   with `app.pod.service`/`app.pod.job` (plus a shared `app.pod.container`)
   instead of threading `mode` conditionals through one partial
-- `shellcheck` as a step in CI's `lint` job - decided in
-  [0021](decisions/0021-shell-script-style.md), not wired in yet
 
 ### infrastructure
 

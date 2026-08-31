@@ -333,8 +333,7 @@ already follows it (`set -euo pipefail`, `[[ ]]` over `[ ]`, quoted
 expansions) - worth keeping true as more scripts show up, not a new
 requirement.
 
-`shellcheck` isn't wired into CI's `lint` job yet - see
-[known gaps](#known-gaps).
+`shellcheck` runs in CI's `lint` job, pinned in [mise.toml](../mise.toml).
 
 ## commits
 
@@ -490,6 +489,3 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   (`make db-up`, a standalone container - see
   [0008](decisions/0008-repo-tree-layout.md)), not a full deploy. the
   `deploy/helm`/Tiltfile path itself still has no CI coverage at all.
-- `shellcheck` doesn't run anywhere - one script exists today
-  ([local/new-service.sh](../local/new-service.sh)), see
-  [0021](decisions/0021-shell-script-style.md).
