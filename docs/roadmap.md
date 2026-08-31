@@ -226,6 +226,12 @@ now, not just under-scoped.
   service needs one; replaces the single `_pod.tpl`/`app.pod` partial
   with `app.pod.service`/`app.pod.job` (plus a shared `app.pod.container`)
   instead of threading `mode` conditionals through one partial
+- hermetic builds - `mise` pins tool *versions* but not the build itself
+  (no sandboxing, no bit-for-bit reproducibility, still depends on
+  whatever's ambient on the host/CI runner). undetermined whether Bazel
+  alone is worth it here, whether Nix belongs alongside it, or something
+  else entirely - needs a decision doc once someone picks this up, not
+  decided ahead of time
 
 ### infrastructure
 
