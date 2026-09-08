@@ -5,7 +5,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 ORG_NAME="iamnande"
-DEFAULT_REGION="us-east-2"
 DEFAULT_DATABASE_HOST="postgres-rw.databases.svc.cluster.local"
 
 read -rp "slug (lowercase, hyphens ok, e.g. widgets): " SLUG
@@ -90,14 +89,16 @@ app:
 
   env:
     HYRULE_HTTP_SERVER_ADDR: ":8000"
-    HYRULE_REGION: ${DEFAULT_REGION}
-    HYRULE_ENVIRONMENT: local
     HYRULE_DATABASE_HOST: ${DEFAULT_DATABASE_HOST}
     HYRULE_DATABASE_PORT: "5432"
     HYRULE_DATABASE_USER: hyrule_app
     HYRULE_DATABASE_PASSWORD: hyrule_app
-    HYRULE_DATABASE_NAME: hyrule
+    HYRULE_DATABASE_NAME: ${SLUG}
     HYRULE_DATABASE_SSL_MODE: disable
+
+  datastores:
+    - slug: ${SLUG}
+      flavor: postgres
 
 platform: {}
 EOF
@@ -139,8 +140,6 @@ app:
 
   env:
     HYRULE_HTTP_SERVER_ADDR: ":8000"
-    HYRULE_REGION: ${DEFAULT_REGION}
-    HYRULE_ENVIRONMENT: local
 
 platform: {}
 EOF

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: appprojects
+description: generates one AppProject per entry in the services registry
+type: application
+version: 0.1.0

@@ -32,7 +32,7 @@ hook, the generator shape - without real VPS spend or homelab hardware.
 
 1. install ArgoCD via its own Helm chart into the local cluster, in its own `argocd` namespace,
    via new `mk/argocd.mk` (`argocd-up`/`argocd-down`). same pattern as `mk/cluster.mk`.
-2. add a services registry, `local/argocd/services.yaml` - one entry per service (`service`,
+2. add a services registry, `local/argocd/appprojects/services.yaml` - one entry per service (`service`,
    `team`, `domain`), the single source of truth for "what's live in ArgoCD, owned by whom."
    decoupled from `deploy/values/<service>/` existing: a service can be scaffolded without being
    registered - an explicit deploy gate, not implicit-by-directory (Tilt's own directory-listing
@@ -55,8 +55,10 @@ hook, the generator shape - without real VPS spend or homelab hardware.
    shape for these two keys specifically). sync the generated Application into `pings` - the same
    namespace Tilt targets today - matching how ArgoCD actually runs in every non-local
    environment, standalone with no Tilt in the picture at all. locally that means Tilt's `pings`
-   resource is stopped before a sync, so there's exactly one controller writing to that namespace
-   at a time, not two sharing it.
+   and `pings-migrate` resources are both stopped before a sync - Tilt's `resource_deps` only
+   orders builds, it doesn't propagate enable/disable state, so the migrate resource needs
+   stopping explicitly too - so there's exactly one controller writing to that namespace at a
+   time, not two sharing it.
 5. move the migrate Job into `deploy/helm/app` itself as an opt-in, PreSync-hook-annotated
    template, per [0025](../../decisions/0025-migrate-as-chart-primitive.md) - narrows 0017's
    "migrate lives outside app/platform" framing, which was reasoning about a single
@@ -88,7 +90,7 @@ deliberate exception: the migrate Job template moves *into* `deploy/helm/app`
 service can opt into everywhere, not a prototype-only artifact, so it belongs where the rest of
 the chart lives, not under `local/`.
 
-`local/argocd/services.yaml` and Tilt's own service discovery (`ls deploy/values`, unchanged)
+`local/argocd/appprojects/services.yaml` and Tilt's own service discovery (`ls deploy/values`, unchanged)
 answer different questions on purpose - Tilt asks "what's scaffolded," the registry asks "what's
 live in ArgoCD, owned by whom." a service can exist in `deploy/values/` without a registry entry;
 Tilt still deploys it locally, ArgoCD just doesn't know about it yet.
@@ -121,7 +123,7 @@ Application can override, that a service's own committed values never sets).
 **before:** only Tilt's manual-trigger loop deploys locally, owning the `pings` namespace. no
 GitOps mechanism exists anywhere in the repo.
 
-**after:** Tilt's `pings` resource is stopped. `pings` has a `local/argocd/services.yaml` entry,
+**after:** Tilt's `pings` and `pings-migrate` resources are stopped. `pings` has a `local/argocd/appprojects/services.yaml` entry,
 which generates its `AppProject` and, crossed with the local cluster's `region` label, its
 `Application`. pushing a values change to the prototype's feature branch and triggering a manual
 sync rolls the change into the same `pings` namespace Tilt used, now owned by ArgoCD instead. the
@@ -145,8 +147,9 @@ sync/health state. it is not a new hyrule-owned service.
 3. the services `ApplicationSet` has already generated `pings`' `Application` (matrix generator,
    registry × the local cluster's label match) - it sits `OutOfSync` until `pings`' `AppProject`
    exists (step 2) and a manual sync is triggered (R7).
-4. Tilt's `pings` resource is stopped, then a sync (manually triggered) runs the PreSync migrate
-   hook and applies the `app-platform` release into the existing `pings` namespace.
+4. Tilt's `pings` and `pings-migrate` resources are both stopped, then a sync (manually triggered)
+   runs the PreSync migrate hook and applies the `app-platform` release into the existing `pings`
+   namespace.
 5. `make argocd-down` tears ArgoCD down wholesale. Tilt's `pings` namespace and resources stay
    untouched throughout.
 
@@ -157,13 +160,21 @@ sync/health state. it is not a new hyrule-owned service.
   here.
 - CP/DP dual-region migrate ordering (0023's already-flagged sharp edge) is **not** exercised by
   this pass. only one Application, no second region.
+- removing a service's entry from `services.yaml` deletes its generated `Application`, but the
+  services `ApplicationSet`'s own `preserveResourcesOnDeletion: true` (needed for a clean
+  `argocd-down`, see tech spec § Interfaces) means that deletion doesn't cascade - the service's
+  live Deployment/Service/etc. keep running, orphaned, with no trace left in ArgoCD's UI once the
+  Application object is gone. no automated detection or cleanup of this case is built this pass.
 - a service's generated `Application` can exist (via the `ApplicationSet`) before its `AppProject`
   does (via the separately-synced bootstrap Application) - ArgoCD accepts the `Application`
   object either way but leaves it in a validation error state until the referenced project
   exists. bootstrap order matters at sync time, not apply time (R2/R3, see tech spec § Core).
-- Tilt and ArgoCD are never pointed at `pings` at the same time - Tilt's `pings` resource is
-  stopped before a sync, so there's one controller at a time, not simultaneous ownership
-  survived under load. matches the real target shape (ArgoCD standalone, no Tilt in non-local
+- Tilt and ArgoCD are never pointed at `pings` at the same time - Tilt's `pings` and
+  `pings-migrate` resources are both stopped before a sync (stopping `pings` alone leaves
+  `pings-migrate` live, since Tilt's `resource_deps` only orders builds, not enable/disable
+  state - both render the same Job the PreSync hook owns), so there's one controller at a time,
+  not simultaneous ownership survived under load. matches the real target shape (ArgoCD
+  standalone, no Tilt in non-local
   environments) instead of proving a coexistence scenario that won't exist for real.
 - first sync adopting `pings`' existing, Tilt-created resources (Tilt's own `helm_resource` call
   leaves a Helm release secret behind in the namespace) is unverified going in - this pass is
@@ -185,7 +196,7 @@ alerting is added to hyrule itself in this pass.
 
 **in scope:**
 - ArgoCD installed locally via its own Helm chart + new `mk/argocd.mk` targets
-- `local/argocd/services.yaml`, a services registry (service, team, domain) driving everything
+- `local/argocd/appprojects/services.yaml`, a services registry (service, team, domain) driving everything
   below - registering a service is a registry line, not new ArgoCD YAML
 - generated (not hand-written) per-service `AppProject`s from the registry
 - a single services `ApplicationSet`, `matrix` generator (registry × `clusters` generator on
@@ -236,8 +247,8 @@ alerting is added to hyrule itself in this pass.
 - automated sync policy / self-heal. manual sync only, to keep each step of the prototype
   observable
 - running Tilt and ArgoCD against `pings` at the same time. not the real target shape (ArgoCD
-  runs standalone in non-local environments), so not exercised here - Tilt's `pings` resource is
-  stopped before a sync, full stop
+  runs standalone in non-local environments), so not exercised here - Tilt's `pings` and
+  `pings-migrate` resources are stopped before a sync, full stop
 - an `argocd` CLI pin in `mise.toml`. `kubectl apply` + the port-forwarded UI are enough for
   this pass
 - building out 0017's `app.pod.container`/`_pod-service.tpl`/`_pod-job.tpl` split. migrate's own
@@ -267,7 +278,7 @@ alerting is added to hyrule itself in this pass.
 
 - **R1:** ArgoCD is installed into the local cluster via its own Helm chart, brought up via
   `make argocd-up` and torn down via `make argocd-down`.
-- **R2:** `local/argocd/services.yaml` exists as the single registry (service, team, domain) that
+- **R2:** `local/argocd/appprojects/services.yaml` exists as the single registry (service, team, domain) that
   drives everything below - onboarding a service is a registry line plus its existing
   `deploy/values/<service>/`, never new hand-written ArgoCD YAML.
 - **R3:** one `AppProject` per registered service is generated (never hand-written) from the
@@ -286,7 +297,7 @@ alerting is added to hyrule itself in this pass.
   ConfigMap name - both derive from a chart-level default and chart-native naming.
 - **R7:** a values change pushed to that branch and manually synced in ArgoCD is reflected in
   the running `pings` deployment.
-- **R8:** Tilt's `pings` resource is stopped, then ArgoCD's first sync cleanly takes ownership of
+- **R8:** Tilt's `pings` and `pings-migrate` resources are stopped, then ArgoCD's first sync cleanly takes ownership of
   the existing `pings` namespace - no orphaned or conflicting resources left over from Tilt's
   prior management of it.
 - **R9:** `docs/roadmap.md` has a new numbered initiative entry for this work.

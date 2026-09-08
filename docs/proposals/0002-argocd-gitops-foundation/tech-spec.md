@@ -10,7 +10,7 @@ change (a registry line, a labeled cluster Secret), not new ArgoCD YAML. the mig
 a real, opt-in `app` chart primitive per [0025](../../decisions/0025-migrate-as-chart-primitive.md),
 unifying Tilt's local path onto the same definition instead of a hand-maintained duplicate.
 
-- **the registry is the one source of truth for "what's live"** - `local/argocd/services.yaml`
+- **the registry is the one source of truth for "what's live"** - `local/argocd/appprojects/services.yaml`
   lists every registered service (`service`, `team`, `domain`). deliberately decoupled from
   `deploy/values/<service>/` existing: a service can be scaffolded (`make new-service`) without
   being registered, an explicit gate rather than implicit-by-directory. Tilt's own discovery
@@ -84,7 +84,7 @@ instance (§ Core, § Files Changed) - a deployment-topology fact, not a new ent
 
 ## Interfaces
 
-**`local/argocd/services.yaml`** (new) - the registry:
+**`local/argocd/appprojects/services.yaml`** (new) - the registry:
 
 ```yaml
 - service: pings
@@ -93,7 +93,10 @@ instance (§ Core, § Files Changed) - a deployment-topology fact, not a new ent
 ```
 
 `service`, not `name` - avoids colliding with the `clusters` generator's own `{{name}}` param
-once both feed the same `matrix` generator (see Overview).
+once both feed the same `matrix` generator (see Overview). lives inside the `appprojects` chart
+directory (not `local/argocd/` directly, as first drafted) - see that chart's own entry below for
+why: it's the one file both the chart and the services `ApplicationSet`'s git generator read, and
+each needs it in a different shape.
 
 **`local/argocd/cluster-local.yaml`** (updated) - gains an `environment` label alongside
 `region`, per [0026](../../decisions/0026-region-environment-argo-derived.md):
@@ -135,7 +138,8 @@ version: 0.1.0
 
 ```yaml
 # templates/appproject.yaml
-{{- range .Values }}
+{{- $services := .Files.Get "services.yaml" | fromYamlArray }}
+{{- range $services }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -158,11 +162,16 @@ spec:
 {{- end }}
 ```
 
-`.Values` is the registry's own top-level list - `services.yaml` doubles as this chart's values
-file directly (see the wrapper Application below), nothing re-shapes it in between.
-`destinations.server: '*'` - cluster scoping is already enforced by the services `ApplicationSet`'s
-own `clusters` generator selector; the project only needs to fix *which namespace*, not which
-cluster.
+reads its own `services.yaml` via `.Files.Get` + `fromYamlArray`, not `.Values` - discovered live
+against a real ArgoCD sync (execution phase, not caught by `helm template` alone during planning):
+Helm's values loader requires a values file's root to be a map, but the services `ApplicationSet`'s
+git generator (below) requires the *same physical file* to be a top-level array to generate one
+param set per entry (R4) - passing it as `helm.valueFiles` fails outright
+(`cannot unmarshal array into Go value of type map[string]interface {}`). moving the registry
+inside the chart and reading it via `.Files.Get` keeps one source of truth in its required array
+shape for both consumers, without a second copy or a reshaping step. `destinations.server: '*'` -
+cluster scoping is already enforced by the services `ApplicationSet`'s own `clusters` generator
+selector; the project only needs to fix *which namespace*, not which cluster.
 
 **`local/argocd/application-projects.yaml`** (new) - the one Application that renders every
 `AppProject` from the registry, applied directly by `argocd-up` (same as `cluster-local.yaml`),
@@ -176,16 +185,10 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  sources:
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      path: local/argocd/appprojects
-      helm:
-        valueFiles:
-          - $values/local/argocd/services.yaml
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      ref: values
+  source:
+    repoURL: https://github.com/iamnande/hyrule
+    targetRevision: prototype/0002-argocd-gitops
+    path: local/argocd/appprojects
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -194,7 +197,9 @@ spec:
 
 `project: default` - ArgoCD's built-in project, unchanged. this Application is platform bootstrap
 infra, the same tier as registering the cluster itself; it can't reasonably belong to a
-per-service project it's the thing generating.
+per-service project it's the thing generating. a single `source`, not the first draft's two - the
+chart no longer needs an externally injected values file (see `appprojects/` above), so there's
+nothing for a second `ref: values` source to supply.
 
 **`local/argocd/applicationset-services.yaml`** (new) - the one `ApplicationSet` for every
 service, `matrix` generator, replaces the first draft's per-service `appproject-pings.yaml` +
@@ -207,6 +212,8 @@ metadata:
   name: services
   namespace: argocd
 spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   generators:
     - matrix:
         generators:
@@ -214,7 +221,7 @@ spec:
               repoURL: https://github.com/iamnande/hyrule
               revision: prototype/0002-argocd-gitops
               files:
-                - path: local/argocd/services.yaml
+                - path: local/argocd/appprojects/services.yaml
           - clusters:
               selector:
                 matchLabels:
@@ -229,6 +236,7 @@ spec:
           targetRevision: prototype/0002-argocd-gitops
           path: deploy/helm/app-platform
           helm:
+            releaseName: '{{service}}'
             valueFiles:
               - $values/deploy/values/{{service}}/values.yaml
             parameters:
@@ -247,6 +255,23 @@ spec:
 
 `{{service}}` from the git-files side, `{{name}}`/`{{server}}`/`{{metadata.labels.*}}` from the
 `clusters` side - the matrix generator merges both parameter sets, no collision (see Overview).
+the ApplicationSet's own `syncPolicy.preserveResourcesOnDeletion: true` - discovered live on
+`argocd-down`, not something a sync-only test surfaces: without it, the ApplicationSet controller
+auto-adds `resources-finalizer.argocd.argoproj.io` to every Application it generates, which exists
+specifically to cascade-delete that Application's live resources when the Application itself is
+deleted. `helm uninstall`ing ArgoCD deletes the application-controller pod that would process that
+finalizer before `kubectl delete namespace argocd` gets to `pings-local`, so the delete hangs
+forever instead of either completing or (worse) actually cascading into `pings`. this is the
+opposite of R8/the PRD's explicit "registered service namespaces untouched" - `preserveResourcesOnDeletion`
+is what makes that safety deliberate instead of an accidental deadlock.
+
+`helm.releaseName: '{{service}}'` - discovered live, on the real adoption attempt R8 asks for:
+without it, ArgoCD defaults `.Release.Name` to the Application's own name (`pings-local`), which
+flows into `app.selectorLabels` (`app.kubernetes.io/name`/`app.kubernetes.io/instance`) and
+mismatches the `app.kubernetes.io/name: pings`/`instance: pings` Tilt's own `helm_resource` release
+(named `pings`) already set on the running Deployment - `spec.selector` is immutable, so the sync
+fails outright trying to change it. pinning the release name to the service name is what makes
+Argo's render match what's already running, letting adoption succeed.
 `project: '{{service}}'` - the `AppProject` `application-projects.yaml` generates. `syncPolicy: {}`
 - unchanged, still manual-sync-only.
 
@@ -566,12 +591,16 @@ never needs a re-sync of `argocd-projects` to matter in the same blocking way, s
 needs is generated the moment its registry entry exists and `argocd-projects` next syncs on any
 trigger).
 
-**3. stopping Tilt before a sync:** unchanged from the first draft - `pings` (per the PRD) is
-stopped, so there's exactly one controller writing to that namespace at a time. `postgres` keeps
-running; it's what both the app and the migrate hook connect to. Tilt's `<slug>-migrate` resource
-(now per-service) is also implicitly not running once its parent service's Tilt resources are
-stopped - nothing separately needs stopping the way the first draft's global `migrate` resource
-did, since migrate is no longer a standalone Tilt resource shared across services.
+**3. stopping Tilt before a sync:** revised from the first draft's assumption - `pings` (per the
+PRD) is stopped, so there's exactly one controller writing to that namespace at a time. `postgres`
+keeps running; it's what both the app and the migrate hook connect to. Tilt's `<slug>-migrate`
+resource (now per-service) does **not** implicitly stop with it, though - discovered live, not
+caught by inspection alone: `resource_deps` (`deploy_service()`'s dependency on `<slug>-migrate`)
+only orders builds, it doesn't propagate enable/disable state, and both Tilt's rendered migrate
+Job and ArgoCD's PreSync-hook Job are the exact same object (same `{{ app.fullname }}-migrate`
+name, same namespace). `<slug>-migrate` needs stopping explicitly alongside `<slug>` - the first
+draft's global `migrate` resource needed the same explicit stop, this per-service split didn't
+change that.
 
 **4. first sync / adoption (R7):** `argocd app sync pings-local` triggers, in order: the PreSync
 hook Job (now `pings`' own `deploy/helm/app` migrate template, rendered as part of the
@@ -589,7 +618,7 @@ feature branch, then a manual sync, re-renders the Helm source (base values + th
 PreSync hook still runs first (fresh Job, `migrate` is idempotent).
 
 **6. registering a second service:** add a `deploy/values/<service>/` (already how `make
-new-service` scaffolds today) plus one line to `local/argocd/services.yaml`. the next sync of
+new-service` scaffolds today) plus one line to `local/argocd/appprojects/services.yaml`. the next sync of
 `argocd-projects` generates its `AppProject`; the services `ApplicationSet` immediately generates
 its `Application` against every already-matched cluster (today: just the local one). no new
 ArgoCD YAML written by hand - the whole point of this revision.
@@ -621,7 +650,7 @@ for observing sync/health state only, per the PRD's Observability section.
 | file | change |
 |---|---|
 | `mk/argocd.mk` | new — `argocd-up`/`argocd-down`/`argocd-ui`, bootstrap order includes the projects Application + services `ApplicationSet` |
-| `local/argocd/services.yaml` | new — the services registry (service, team, domain) |
+| `local/argocd/appprojects/services.yaml` | new — the services registry (service, team, domain) |
 | `local/argocd/cluster-local.yaml` | new — labels the in-cluster destination `region`/`environment` |
 | `local/argocd/appprojects/Chart.yaml`, `local/argocd/appprojects/templates/appproject.yaml` | new — chart ranging over the registry, one `AppProject` per entry |
 | `local/argocd/application-projects.yaml` | new — the one Application applying the `appprojects` chart |
@@ -651,8 +680,8 @@ steps, in order:
    `OutOfSync` and in a project-validation-error state (R3, R4 - the project doesn't exist yet)
 3. `argocd app sync argocd-projects` - confirm `pings`' `AppProject` now exists, and `pings-local`
    is no longer in a project-validation-error state (still `OutOfSync`/not auto-syncing) (R2, R3)
-4. stop Tilt's `pings` resource; confirm `postgres` keeps running and `pings`' migrate Job is not
-   a standalone Tilt resource independent of `pings` anymore
+4. stop Tilt's `pings` **and** `pings-migrate` resources; confirm `postgres` keeps running and
+   `pings`' migrate Job is not a standalone Tilt resource independent of `pings` anymore
 5. trigger a manual sync of `pings-local` - confirm the PreSync hook Job runs against `pings`' own
    logical database and reaches `Succeeded` before the `app-platform` resources apply, and that
    the existing `pings` namespace shows no orphaned or conflicting resources afterward (R6, R7,
@@ -676,7 +705,7 @@ steps, in order:
 
 | question | resolution |
 |---|---|
-| does Tilt's `migrate` resource need stopping too, not just `pings`? | no longer applicable as a separate step - migrate is no longer a standalone Tilt resource shared across services; it's per-service and implicitly stops with its parent service's Tilt resources |
+| does Tilt's `migrate` resource need stopping too, not just `pings`? | yes, still - discovered live: per-service didn't change this from the first draft's global `migrate` resource. `resource_deps` only orders builds, it doesn't propagate enable/disable state, and Tilt's rendered migrate Job is the same object (name + namespace) the PreSync hook owns - `<slug>-migrate` needs stopping explicitly alongside `<slug>` |
 | who manages the per-service migrations ConfigMap once a service is Argo-managed? | nobody, this pass - same accepted limitation as the first draft, now scoped per-service-namespace instead of `databases` only |
 | does the hook Job move into the `pings` namespace? | yes, now - it's a template inside `pings`' own `app-platform` release, running in `pings`' own namespace, connecting to postgres over the network the same way the app itself does. this reverses the first draft's `databases`-namespace placement, since migrate is no longer a second, explicit-namespace-only Application source (see 0025) |
 | how does the `clusters` generator match anything locally, given ArgoCD's in-cluster destination has no labels by default? | unchanged - `cluster-local.yaml`, applied directly by `make argocd-up`, now also carries `environment: local` |
@@ -692,6 +721,9 @@ steps, in order:
 | where do postgres connection facts live, if not in a service's own values? | a single chart default, `deploy/helm/app/values.yaml`'s `postgres:` block - one file a platform engineer edits to repoint every opted-in service, same mechanism 0026 already uses for region/environment. a service supplies no DSN, ever; the migrate Job builds one internally from the chart default + the datastore entry's own `slug` |
 | are the postgres owner credentials in that chart default a real secret? | no, plaintext - same risk profile as today's already-committed `hyrule_owner`/`hyrule_owner`, just centralized to one file instead of duplicated per service. [0011](../../decisions/0011-secrets-generalized.md) is where real secret management gets solved, not this pass. TLS on the connection itself (including locally) is a related direction, not decided or built here - see `docs/roadmap.md` |
 | what if a service needs more than one `flavor: postgres` datastore? | not handled this pass - `migrate.yaml`'s Job/ConfigMap naming (`{{ app.fullname }}-migrate`/`-migrations`) doesn't weave in `slug`, so a second entry would collide. every real service today has exactly one; revisit by adding `slug` to both names if a second one actually shows up |
+| can `services.yaml` be fed to the `appprojects` chart as `helm.valueFiles`, as first drafted? | no - discovered live during execution, not caught by `helm template` alone. Helm's values loader requires a values file's root to be a map; the services `ApplicationSet`'s git generator requires the same physical file to be a top-level array to generate one param set per entry (R4). the two requirements are incompatible for one file passed via `-f`. fixed by moving `services.yaml` inside the `appprojects` chart directory and reading it via `.Files.Get "services.yaml" | fromYamlArray` instead - one source of truth, in the array shape the generator needs, with no external values injection required |
+| does adoption (R8) work without pinning the Helm release name? | no - discovered live on the actual adoption sync, not something `helm template` alone surfaces (it needs two different release names rendered and diffed to show up). ArgoCD defaults a Helm source's `.Release.Name` to the Application's own name; naming the Application `{{service}}-{{name}}` (`pings-local`) means the rendered `app.selectorLabels` no longer match what Tilt's own `helm_resource` release (named plainly `pings`) already set on the live Deployment, and `spec.selector` is immutable - the sync fails patching it. `helm.releaseName: '{{service}}'` on the ApplicationSet template pins it to match |
+| does `argocd-down` tear down cleanly without touching `pings`/`databases`? | not by default - discovered live running the actual teardown, not a sync-time concern. the ApplicationSet controller auto-adds `resources-finalizer.argocd.argoproj.io` to every Application it generates; `helm uninstall`'s pod deletion races ahead of `kubectl delete namespace argocd`, so nothing is left to process that finalizer and the delete hangs indefinitely instead of completing (or, if the controller had still been running, it would have cascaded into deleting `pings`' own resources - the opposite of what R8/the PRD require). the ApplicationSet's own `syncPolicy.preserveResourcesOnDeletion: true` stops it adding that finalizer at all |
 
 ---
 
@@ -700,7 +732,7 @@ steps, in order:
 | requirement | covered by |
 |---|---|
 | R1 — ArgoCD installed via its own Helm chart, `make argocd-up`/`argocd-down` | § Interfaces (`mk/argocd.mk`), § Core (1, 7) |
-| R2 — `local/argocd/services.yaml` registry drives everything, no hand-written per-service ArgoCD YAML | § Interfaces (`services.yaml`), § Core (6), § Integration Tests (8) |
+| R2 — `local/argocd/appprojects/services.yaml` registry drives everything, no hand-written per-service ArgoCD YAML | § Interfaces (`services.yaml`), § Core (6), § Integration Tests (8) |
 | R3 — one `AppProject` per registered service, generated not hand-written | § Interfaces (`appprojects/`, `application-projects.yaml`), § Core (1, 2), § Integration Tests (2, 3) |
 | R4 — one `ApplicationSet`, `matrix` generator (registry × `clusters`), one Application per service × matched cluster | § Interfaces (`applicationset-services.yaml`), § Core (1), § Integration Tests (2, 8) |
 | R5 — region/environment injected from the matched cluster's labels, never committed to values | § Interfaces (`cluster-local.yaml`, `applicationset-services.yaml`'s `helm.parameters`), § Validation, § Integration Tests (6) |

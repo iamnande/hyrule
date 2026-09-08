@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://github.com/iamnande/hyrule
+              revision: prototype/0002-argocd-gitops
+              files:
+                - path: local/argocd/appprojects/services.yaml
+          - clusters:
+              selector:
+                matchLabels:
+                  region: us-west-2
+  template:
+    metadata:
+      name: '{{service}}-{{name}}'
+    spec:
+      project: '{{service}}'
+      sources:
+        - repoURL: https://github.com/iamnande/hyrule
+          targetRevision: prototype/0002-argocd-gitops
+          path: deploy/helm/app-platform
+          helm:
+            releaseName: '{{service}}'
+            valueFiles:
+              - $values/deploy/values/{{service}}/values.yaml
+            parameters:
+              - name: app.env.HYRULE_REGION
+                value: '{{metadata.labels.region}}'
+              - name: app.env.HYRULE_ENVIRONMENT
+                value: '{{metadata.labels.environment}}'
+        - repoURL: https://github.com/iamnande/hyrule
+          targetRevision: prototype/0002-argocd-gitops
+          ref: values
+      destination:
+        server: '{{server}}'
+        namespace: '{{service}}'
+      syncPolicy: {}

@@ -1,0 +1,16 @@
+CREATE DATABASE pings OWNER hyrule_owner;
+GRANT CONNECT ON DATABASE pings TO hyrule_app;
+GRANT CONNECT ON DATABASE pings TO hyrule_app_ro;
+
+\connect pings
+
+GRANT USAGE ON SCHEMA public TO hyrule_app;
+GRANT USAGE ON SCHEMA public TO hyrule_app_ro;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE hyrule_owner IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO hyrule_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE hyrule_owner IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO hyrule_app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE hyrule_owner IN SCHEMA public
+    GRANT SELECT ON TABLES TO hyrule_app_ro;

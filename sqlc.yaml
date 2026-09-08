@@ -3,7 +3,7 @@ sql:
   - engine: "postgresql"
     queries: "go/internal/svc/pings/repository/queries"
     schema:
-      - "migrations/000001_create_pings.up.sql"
+      - "migrations/pings/000001_create_pings.up.sql"
     gen:
       go:
         package: "ping"

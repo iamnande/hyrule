@@ -1,0 +1,26 @@
+{{- $reserved := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" "databases" }}
+{{- $services := .Files.Get "services.yaml" | fromYamlArray }}
+{{- range $services }}
+{{- if has .service $reserved }}
+{{- fail (printf "services.yaml: %q collides with a reserved namespace" .service) }}
+{{- end }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .service }}
+  namespace: argocd
+  labels:
+    team: {{ .team }}
+    domain: {{ .domain }}
+spec:
+  sourceRepos:
+    - https://github.com/iamnande/hyrule
+  destinations:
+    - namespace: {{ .service }}
+      server: '*'
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+{{- end }}

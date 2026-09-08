@@ -46,7 +46,7 @@ ifeq ($(TEST_VERBOSE),true)
 endif
 test-integration: ## test: execute integration test suite
 	@echo $(PROJECT_LOG_FMT) "executing integration test suite"
-	@go tool ginkgo run -r \
+	@HYRULE_DATABASE_NAME=$(SERVICE_NAME) go tool ginkgo run -r \
 		--race \
 		--randomize-all \
 		--procs=$(INTEGRATION_TEST_PROCS) \
@@ -57,7 +57,7 @@ SMOKE_BIN := /tmp/hyrule-smoke-$(SERVICE_NAME)
 test-smoke: ## test: build+run the target service for real, curl /discovery and /readyz, stop it
 	@echo $(PROJECT_LOG_FMT) "smoke testing $(SERVICE_NAME)"
 	@go build -ldflags $(GO_LDFLAGS) -o $(SMOKE_BIN) ./go/cmd/$(SERVICE_NAME); \
-	$(SMOKE_BIN) & \
+	HYRULE_DATABASE_NAME=$(SERVICE_NAME) $(SMOKE_BIN) & \
 	pid=$$!; \
 	trap "kill $$pid 2>/dev/null; rm -f $(SMOKE_BIN)" EXIT; \
 	up=0; \

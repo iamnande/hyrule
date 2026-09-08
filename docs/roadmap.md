@@ -238,7 +238,7 @@ now, not just under-scoped.
 ### 6. ArgoCD + GitOps foundation
 
 installs ArgoCD into the local cluster and proves the shape meant to scale to ~60 services: a
-services registry ([local/argocd/services.yaml](../local/argocd/services.yaml)) drives generated
+services registry ([local/argocd/appprojects/services.yaml](../local/argocd/appprojects/services.yaml)) drives generated
 `AppProject`s and a single `matrix`-generator `ApplicationSet`, instead of hand-writing an
 `AppProject`+`ApplicationSet` pair per service. proven locally against `pings`, the one service
 registered today. see

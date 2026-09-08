@@ -49,12 +49,38 @@ metadata:
     )
 
 
-def local_migrate():
-    k8s_yaml(configmap_from_dir('hyrule-migrations', 'migrations', namespace='databases'))
-    k8s_yaml('local/cluster/migrate-job.yaml')
+def has_postgres_datastore(datastores):
+    return any([
+        d.get('flavor') == 'postgres' and d.get('schema_management', 'enabled') != 'disabled'
+        for d in datastores
+    ])
+
+
+def local_migrate(slug):
+    values_path = 'deploy/values/%s/values.yaml' % slug
+    values = read_yaml(values_path)
+    datastores = values.get('app', {}).get('datastores', [])
+    if not has_postgres_datastore(datastores):
+        return
+    migrations_configmap = '%s-migrations' % slug  # matches app.fullname-derived naming
+    k8s_yaml(blob("""
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+""" % slug))
+    k8s_yaml(configmap_from_dir(
+        migrations_configmap, 'migrations/%s' % slug, namespace=slug,
+    ))
+    rendered = local(
+        ('helm template %s deploy/helm/app-platform --namespace=%s --values=%s ' +
+         '--show-only charts/app/templates/migrate.yaml') % (slug, slug, values_path),
+        quiet=True,
+    )
+    k8s_yaml(blob(str(rendered)))
     k8s_resource(
-        'migrate',
-        objects=['hyrule-migrations:configmap'],
+        '%s-migrate' % slug,
+        objects=['%s:configmap' % migrations_configmap, '%s:namespace' % slug],
         resource_deps=['postgres'],
         labels=['local-only'],
     )
@@ -80,17 +106,17 @@ def build_service(slug):
 def deploy_service(slug):
     values_path = 'deploy/values/%s/values.yaml' % slug
     values = read_yaml(values_path)
-    needs_db = 'HYRULE_DATABASE_HOST' in values.get('app', {}).get('env', {})
+    needs_migrate = has_postgres_datastore(values.get('app', {}).get('datastores', []))
 
     helm_resource(
         name=slug,
         chart='deploy/helm/app-platform',
         release_name=slug,
         namespace=slug,
-        flags=['--values=%s' % values_path, '--create-namespace'],
+        flags=['--values=%s' % values_path, '--create-namespace', '--set-json=app.datastores=[]'],
         image_deps=['%s/%s' % (ORG_NAME, slug)],
         image_keys=[('app.image.repository', 'app.image.tag')],
-        resource_deps=['migrate'] if needs_db else [],
+        resource_deps=['%s-migrate' % slug] if needs_migrate else [],
         port_forwards=[port_forward(local_port=0, container_port=8000)],
         labels=['deploy'],
     )
@@ -107,7 +133,8 @@ def deploy_service(slug):
 print('hyrule: %d service(s) under deploy/values/: %s' % (len(SERVICE_SLUGS), ', '.join(SERVICE_SLUGS)))
 
 local_database()
-local_migrate()
+for slug in SERVICE_SLUGS:
+    local_migrate(slug)
 
 for slug in SERVICE_SLUGS:
     build_service(slug)
