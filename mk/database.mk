@@ -1,5 +1,5 @@
-MIGRATIONS_DIR := migrations/pings
-DATABASE_URL   ?= postgres://hyrule_owner:hyrule_owner@localhost:5432/pings?sslmode=disable
+MIGRATIONS_DIR := migrations/$(SERVICE_NAME)
+DATABASE_URL   ?= postgres://hyrule_owner:hyrule_owner@localhost:5432/$(SERVICE_NAME)?sslmode=disable
 
 DB_TIMEOUT := 10
 
