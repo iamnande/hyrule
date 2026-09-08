@@ -212,6 +212,8 @@ metadata:
   name: services
   namespace: argocd
 spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   generators:
     - matrix:
         generators:
@@ -253,6 +255,16 @@ spec:
 
 `{{service}}` from the git-files side, `{{name}}`/`{{server}}`/`{{metadata.labels.*}}` from the
 `clusters` side - the matrix generator merges both parameter sets, no collision (see Overview).
+the ApplicationSet's own `syncPolicy.preserveResourcesOnDeletion: true` - discovered live on
+`argocd-down`, not something a sync-only test surfaces: without it, the ApplicationSet controller
+auto-adds `resources-finalizer.argocd.argoproj.io` to every Application it generates, which exists
+specifically to cascade-delete that Application's live resources when the Application itself is
+deleted. `helm uninstall`ing ArgoCD deletes the application-controller pod that would process that
+finalizer before `kubectl delete namespace argocd` gets to `pings-local`, so the delete hangs
+forever instead of either completing or (worse) actually cascading into `pings`. this is the
+opposite of R8/the PRD's explicit "registered service namespaces untouched" - `preserveResourcesOnDeletion`
+is what makes that safety deliberate instead of an accidental deadlock.
+
 `helm.releaseName: '{{service}}'` - discovered live, on the real adoption attempt R8 asks for:
 without it, ArgoCD defaults `.Release.Name` to the Application's own name (`pings-local`), which
 flows into `app.selectorLabels` (`app.kubernetes.io/name`/`app.kubernetes.io/instance`) and
@@ -707,6 +719,7 @@ steps, in order:
 | what if a service needs more than one `flavor: postgres` datastore? | not handled this pass - `migrate.yaml`'s Job/ConfigMap naming (`{{ app.fullname }}-migrate`/`-migrations`) doesn't weave in `slug`, so a second entry would collide. every real service today has exactly one; revisit by adding `slug` to both names if a second one actually shows up |
 | can `services.yaml` be fed to the `appprojects` chart as `helm.valueFiles`, as first drafted? | no - discovered live during execution, not caught by `helm template` alone. Helm's values loader requires a values file's root to be a map; the services `ApplicationSet`'s git generator requires the same physical file to be a top-level array to generate one param set per entry (R4). the two requirements are incompatible for one file passed via `-f`. fixed by moving `services.yaml` inside the `appprojects` chart directory and reading it via `.Files.Get "services.yaml" | fromYamlArray` instead - one source of truth, in the array shape the generator needs, with no external values injection required |
 | does adoption (R8) work without pinning the Helm release name? | no - discovered live on the actual adoption sync, not something `helm template` alone surfaces (it needs two different release names rendered and diffed to show up). ArgoCD defaults a Helm source's `.Release.Name` to the Application's own name; naming the Application `{{service}}-{{name}}` (`pings-local`) means the rendered `app.selectorLabels` no longer match what Tilt's own `helm_resource` release (named plainly `pings`) already set on the live Deployment, and `spec.selector` is immutable - the sync fails patching it. `helm.releaseName: '{{service}}'` on the ApplicationSet template pins it to match |
+| does `argocd-down` tear down cleanly without touching `pings`/`databases`? | not by default - discovered live running the actual teardown, not a sync-time concern. the ApplicationSet controller auto-adds `resources-finalizer.argocd.argoproj.io` to every Application it generates; `helm uninstall`'s pod deletion races ahead of `kubectl delete namespace argocd`, so nothing is left to process that finalizer and the delete hangs indefinitely instead of completing (or, if the controller had still been running, it would have cascaded into deleting `pings`' own resources - the opposite of what R8/the PRD require). the ApplicationSet's own `syncPolicy.preserveResourcesOnDeletion: true` stops it adding that finalizer at all |
 
 ---
 
