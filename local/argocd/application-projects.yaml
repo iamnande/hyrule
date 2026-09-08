@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-projects
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/iamnande/hyrule
+      targetRevision: prototype/0002-argocd-gitops
+      path: local/argocd/appprojects
+      helm:
+        valueFiles:
+          - $values/local/argocd/services.yaml
+    - repoURL: https://github.com/iamnande/hyrule
+      targetRevision: prototype/0002-argocd-gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy: {}

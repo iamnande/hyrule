@@ -1,0 +1,3 @@
+- service: pings
+  team: platform
+  domain: core
