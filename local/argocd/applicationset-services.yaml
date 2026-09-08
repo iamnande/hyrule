@@ -26,6 +26,7 @@ spec:
           targetRevision: prototype/0002-argocd-gitops
           path: deploy/helm/app-platform
           helm:
+            releaseName: '{{service}}'
             valueFiles:
               - $values/deploy/values/{{service}}/values.yaml
             parameters:

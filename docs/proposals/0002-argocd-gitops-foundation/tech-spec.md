@@ -234,6 +234,7 @@ spec:
           targetRevision: prototype/0002-argocd-gitops
           path: deploy/helm/app-platform
           helm:
+            releaseName: '{{service}}'
             valueFiles:
               - $values/deploy/values/{{service}}/values.yaml
             parameters:
@@ -252,6 +253,13 @@ spec:
 
 `{{service}}` from the git-files side, `{{name}}`/`{{server}}`/`{{metadata.labels.*}}` from the
 `clusters` side - the matrix generator merges both parameter sets, no collision (see Overview).
+`helm.releaseName: '{{service}}'` - discovered live, on the real adoption attempt R8 asks for:
+without it, ArgoCD defaults `.Release.Name` to the Application's own name (`pings-local`), which
+flows into `app.selectorLabels` (`app.kubernetes.io/name`/`app.kubernetes.io/instance`) and
+mismatches the `app.kubernetes.io/name: pings`/`instance: pings` Tilt's own `helm_resource` release
+(named `pings`) already set on the running Deployment - `spec.selector` is immutable, so the sync
+fails outright trying to change it. pinning the release name to the service name is what makes
+Argo's render match what's already running, letting adoption succeed.
 `project: '{{service}}'` - the `AppProject` `application-projects.yaml` generates. `syncPolicy: {}`
 - unchanged, still manual-sync-only.
 
@@ -698,6 +706,7 @@ steps, in order:
 | are the postgres owner credentials in that chart default a real secret? | no, plaintext - same risk profile as today's already-committed `hyrule_owner`/`hyrule_owner`, just centralized to one file instead of duplicated per service. [0011](../../decisions/0011-secrets-generalized.md) is where real secret management gets solved, not this pass. TLS on the connection itself (including locally) is a related direction, not decided or built here - see `docs/roadmap.md` |
 | what if a service needs more than one `flavor: postgres` datastore? | not handled this pass - `migrate.yaml`'s Job/ConfigMap naming (`{{ app.fullname }}-migrate`/`-migrations`) doesn't weave in `slug`, so a second entry would collide. every real service today has exactly one; revisit by adding `slug` to both names if a second one actually shows up |
 | can `services.yaml` be fed to the `appprojects` chart as `helm.valueFiles`, as first drafted? | no - discovered live during execution, not caught by `helm template` alone. Helm's values loader requires a values file's root to be a map; the services `ApplicationSet`'s git generator requires the same physical file to be a top-level array to generate one param set per entry (R4). the two requirements are incompatible for one file passed via `-f`. fixed by moving `services.yaml` inside the `appprojects` chart directory and reading it via `.Files.Get "services.yaml" | fromYamlArray` instead - one source of truth, in the array shape the generator needs, with no external values injection required |
+| does adoption (R8) work without pinning the Helm release name? | no - discovered live on the actual adoption sync, not something `helm template` alone surfaces (it needs two different release names rendered and diffed to show up). ArgoCD defaults a Helm source's `.Release.Name` to the Application's own name; naming the Application `{{service}}-{{name}}` (`pings-local`) means the rendered `app.selectorLabels` no longer match what Tilt's own `helm_resource` release (named plainly `pings`) already set on the live Deployment, and `spec.selector` is immutable - the sync fails patching it. `helm.releaseName: '{{service}}'` on the ApplicationSet template pins it to match |
 
 ---
 
