@@ -8,6 +8,20 @@ what's not decided or not built yet.
 
 ## next steps
 
+- per-service databases, physical replication instead of one shared
+  instance under logical replication - a live direction, not fully
+  decided yet. different services likely have different data-lifecycle
+  and replication needs, and physical replication ships DDL for free
+  where logical replication (0023) doesn't. reopens 0006/0014's
+  shared-instance framing and most of 0023's argument outright once
+  picked up; 0019's backup story goes from one CP primary to N.
+  [0002](proposals/0002-argocd-gitops-foundation/prd.md)/
+  [0025](decisions/0025-migrate-as-chart-primitive.md) already moved the
+  migrate mechanism itself (a `deploy/helm/app` PreSync-hook primitive,
+  one per service, targeting a per-service *logical* database on the one
+  shared instance) ahead of this - that was narrow enough to decide
+  without settling physical-vs-logical or replication, which stay fully
+  open here
 - close the CI gap on the k3s/Tilt/Helm path - it has zero coverage today,
   everything else on this list builds on top of that path
 - prove the hyrule -> homelab handoff for real: deploy `pings` to an
@@ -22,6 +36,17 @@ what's not decided or not built yet.
   risks two contracts drifting. no gRPC service exists yet to prove a
   toolchain (e.g. grpc-gateway + protoc-gen-openapiv2) against, so this
   stays a spike, not a decision, until one does
+- require TLS on database connections, including locally, not just
+  everywhere-but-local as originally scoped here - raised during
+  [0002](proposals/0002-argocd-gitops-foundation/tech-spec.md)'s
+  `datastores` design pass, where the postgres owner credentials became a
+  single plaintext chart default (centralized, not a regression, but not
+  a fix either). [0013](decisions/0013-ingress-dns-tls.md) only covers
+  gateway-terminated TLS for ingress traffic, postgres connections
+  themselves aren't covered by that decision. mTLS or service-to-service
+  OAuth is the likely longer-term direction for service-to-service
+  traffic generally, not just postgres - needs its own decision doc once
+  picked up, not decided here
 
 ## decisions pending write-up
 
@@ -209,6 +234,23 @@ now, not just under-scoped.
    [deploy/values/iam-jwks/values.yaml](../deploy/values/iam-jwks/values.yaml).
 4. pair ESO with a reloader (e.g. Stakater's `Reloader`) so a rotated
    secret still restarts the pod consuming it.
+
+### 6. ArgoCD + GitOps foundation
+
+installs ArgoCD into the local cluster and proves the shape meant to scale to ~60 services: a
+services registry ([local/argocd/services.yaml](../local/argocd/services.yaml)) drives generated
+`AppProject`s and a single `matrix`-generator `ApplicationSet`, instead of hand-writing an
+`AppProject`+`ApplicationSet` pair per service. proven locally against `pings`, the one service
+registered today. see
+[0002](proposals/0002-argocd-gitops-foundation/prd.md)/[tech spec](proposals/0002-argocd-gitops-foundation/tech-spec.md)
+for the full design, and [0025](decisions/0025-migrate-as-chart-primitive.md)/
+[0026](decisions/0026-region-environment-argo-derived.md) for the two decisions it narrows
+(0017's migrate framing, 0009's region/environment values shape).
+
+registering `iam-jwks` and any future service is a `services.yaml` line plus its existing
+`deploy/values/<service>/` - no new ArgoCD YAML, by design. registering real CP/DP clusters with
+the `clusters` generator is separate follow-up work, gated on VPS provisioning actually
+happening (not guessed at here, same as initiative 5).
 
 ## by category
 
