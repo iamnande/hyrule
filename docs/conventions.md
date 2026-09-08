@@ -244,13 +244,16 @@ query got complex, then the abstraction fought back. instead:
   one backend to support, and building that abstraction before a second
   backend exists is premature.
 
-**migrations live in [migrations](../migrations)** at the repo root,
+**migrations live in `migrations/<service>`**, one directory per service
+opted into `datastores` (`flavor: postgres`) - each such service gets its
+own logical database on the shared postgres instance, per
+[0025](decisions/0025-migrate-as-chart-primitive.md)/
+[0002](proposals/0002-argocd-gitops-foundation/prd.md), so table names
+don't need a `<service>_` prefix to avoid colliding with another
+service's tables the way a single shared schema would have required.
 applied with `make db-migrate-up` (`make db-migrate-create NAME=...` to
-scaffold one) - see [mk/database.mk](../mk/database.mk). one shared
-schema, every service's tables in it - so a table is named
-`<service>_<entity>` (`iam_jwks_keys`), not just `<entity>`, once there's
-more than one service. `pings` predates this and stays unprefixed rather
-than a needless rename.
+scaffold one, `MIGRATIONS_DIR`/`DATABASE_URL` overridden per service) -
+see [mk/database.mk](../mk/database.mk).
 
 **`sqlc` generates into `repository/<entity>`, not `repository/generated`.**
 config at [sqlc.yaml](../sqlc.yaml); each service gets its own `sql:`
