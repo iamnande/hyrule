@@ -50,10 +50,10 @@ metadata:
 
 
 def has_postgres_datastore(datastores):
-    return any(
+    return any([
         d.get('flavor') == 'postgres' and d.get('schema_management', 'enabled') != 'disabled'
         for d in datastores
-    )
+    ])
 
 
 def local_migrate(slug):
@@ -73,8 +73,8 @@ metadata:
         migrations_configmap, 'migrations/%s' % slug, namespace=slug,
     ))
     rendered = local(
-        'helm template %s deploy/helm/app-platform --values=%s '
-        '--show-only charts/app/templates/migrate.yaml' % (slug, values_path),
+        ('helm template %s deploy/helm/app-platform --namespace=%s --values=%s ' +
+         '--show-only charts/app/templates/migrate.yaml') % (slug, slug, values_path),
         quiet=True,
     )
     k8s_yaml(blob(str(rendered)))
