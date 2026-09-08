@@ -12,6 +12,7 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: {{ $.Values.migrate.backoffLimit }}
+  activeDeadlineSeconds: {{ $.Values.migrate.activeDeadlineSeconds }}
   template:
     spec:
       restartPolicy: Never

@@ -591,12 +591,16 @@ never needs a re-sync of `argocd-projects` to matter in the same blocking way, s
 needs is generated the moment its registry entry exists and `argocd-projects` next syncs on any
 trigger).
 
-**3. stopping Tilt before a sync:** unchanged from the first draft - `pings` (per the PRD) is
-stopped, so there's exactly one controller writing to that namespace at a time. `postgres` keeps
-running; it's what both the app and the migrate hook connect to. Tilt's `<slug>-migrate` resource
-(now per-service) is also implicitly not running once its parent service's Tilt resources are
-stopped - nothing separately needs stopping the way the first draft's global `migrate` resource
-did, since migrate is no longer a standalone Tilt resource shared across services.
+**3. stopping Tilt before a sync:** revised from the first draft's assumption - `pings` (per the
+PRD) is stopped, so there's exactly one controller writing to that namespace at a time. `postgres`
+keeps running; it's what both the app and the migrate hook connect to. Tilt's `<slug>-migrate`
+resource (now per-service) does **not** implicitly stop with it, though - discovered live, not
+caught by inspection alone: `resource_deps` (`deploy_service()`'s dependency on `<slug>-migrate`)
+only orders builds, it doesn't propagate enable/disable state, and both Tilt's rendered migrate
+Job and ArgoCD's PreSync-hook Job are the exact same object (same `{{ app.fullname }}-migrate`
+name, same namespace). `<slug>-migrate` needs stopping explicitly alongside `<slug>` - the first
+draft's global `migrate` resource needed the same explicit stop, this per-service split didn't
+change that.
 
 **4. first sync / adoption (R7):** `argocd app sync pings-local` triggers, in order: the PreSync
 hook Job (now `pings`' own `deploy/helm/app` migrate template, rendered as part of the
@@ -676,8 +680,8 @@ steps, in order:
    `OutOfSync` and in a project-validation-error state (R3, R4 - the project doesn't exist yet)
 3. `argocd app sync argocd-projects` - confirm `pings`' `AppProject` now exists, and `pings-local`
    is no longer in a project-validation-error state (still `OutOfSync`/not auto-syncing) (R2, R3)
-4. stop Tilt's `pings` resource; confirm `postgres` keeps running and `pings`' migrate Job is not
-   a standalone Tilt resource independent of `pings` anymore
+4. stop Tilt's `pings` **and** `pings-migrate` resources; confirm `postgres` keeps running and
+   `pings`' migrate Job is not a standalone Tilt resource independent of `pings` anymore
 5. trigger a manual sync of `pings-local` - confirm the PreSync hook Job runs against `pings`' own
    logical database and reaches `Succeeded` before the `app-platform` resources apply, and that
    the existing `pings` namespace shows no orphaned or conflicting resources afterward (R6, R7,
@@ -701,7 +705,7 @@ steps, in order:
 
 | question | resolution |
 |---|---|
-| does Tilt's `migrate` resource need stopping too, not just `pings`? | no longer applicable as a separate step - migrate is no longer a standalone Tilt resource shared across services; it's per-service and implicitly stops with its parent service's Tilt resources |
+| does Tilt's `migrate` resource need stopping too, not just `pings`? | yes, still - discovered live: per-service didn't change this from the first draft's global `migrate` resource. `resource_deps` only orders builds, it doesn't propagate enable/disable state, and Tilt's rendered migrate Job is the same object (name + namespace) the PreSync hook owns - `<slug>-migrate` needs stopping explicitly alongside `<slug>` |
 | who manages the per-service migrations ConfigMap once a service is Argo-managed? | nobody, this pass - same accepted limitation as the first draft, now scoped per-service-namespace instead of `databases` only |
 | does the hook Job move into the `pings` namespace? | yes, now - it's a template inside `pings`' own `app-platform` release, running in `pings`' own namespace, connecting to postgres over the network the same way the app itself does. this reverses the first draft's `databases`-namespace placement, since migrate is no longer a second, explicit-namespace-only Application source (see 0025) |
 | how does the `clusters` generator match anything locally, given ArgoCD's in-cluster destination has no labels by default? | unchanged - `cluster-local.yaml`, applied directly by `make argocd-up`, now also carries `environment: local` |

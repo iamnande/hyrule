@@ -64,6 +64,7 @@ migrate:
     repository: docker.io/migrate/migrate
     tag: v4.19.1
   backoffLimit: 0
+  activeDeadlineSeconds: 120
 
 extraVolumes: []
 extraVolumeMounts: []

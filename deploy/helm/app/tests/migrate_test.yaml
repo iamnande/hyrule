@@ -37,9 +37,9 @@ tests:
           value:
             argocd.argoproj.io/hook: PreSync
             argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-      - matchRegex:
+      - equal:
           path: spec.template.spec.containers[0].args[1]
-          pattern: /pings\?sslmode=
+          value: -database=postgres://hyrule_owner:hyrule_owner@postgres-rw.databases.svc.cluster.local:5432/pings?sslmode=disable
       - equal:
           path: spec.template.spec.volumes[0].configMap.name
           value: pings-migrations
