@@ -5,16 +5,10 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  sources:
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      path: local/argocd/appprojects
-      helm:
-        valueFiles:
-          - $values/local/argocd/services.yaml
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      ref: values
+  source:
+    repoURL: https://github.com/iamnande/hyrule
+    targetRevision: prototype/0002-argocd-gitops
+    path: local/argocd/appprojects
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

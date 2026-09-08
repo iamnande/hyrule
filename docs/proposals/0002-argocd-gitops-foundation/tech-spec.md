@@ -10,7 +10,7 @@ change (a registry line, a labeled cluster Secret), not new ArgoCD YAML. the mig
 a real, opt-in `app` chart primitive per [0025](../../decisions/0025-migrate-as-chart-primitive.md),
 unifying Tilt's local path onto the same definition instead of a hand-maintained duplicate.
 
-- **the registry is the one source of truth for "what's live"** - `local/argocd/services.yaml`
+- **the registry is the one source of truth for "what's live"** - `local/argocd/appprojects/services.yaml`
   lists every registered service (`service`, `team`, `domain`). deliberately decoupled from
   `deploy/values/<service>/` existing: a service can be scaffolded (`make new-service`) without
   being registered, an explicit gate rather than implicit-by-directory. Tilt's own discovery
@@ -84,7 +84,7 @@ instance (§ Core, § Files Changed) - a deployment-topology fact, not a new ent
 
 ## Interfaces
 
-**`local/argocd/services.yaml`** (new) - the registry:
+**`local/argocd/appprojects/services.yaml`** (new) - the registry:
 
 ```yaml
 - service: pings
@@ -93,7 +93,10 @@ instance (§ Core, § Files Changed) - a deployment-topology fact, not a new ent
 ```
 
 `service`, not `name` - avoids colliding with the `clusters` generator's own `{{name}}` param
-once both feed the same `matrix` generator (see Overview).
+once both feed the same `matrix` generator (see Overview). lives inside the `appprojects` chart
+directory (not `local/argocd/` directly, as first drafted) - see that chart's own entry below for
+why: it's the one file both the chart and the services `ApplicationSet`'s git generator read, and
+each needs it in a different shape.
 
 **`local/argocd/cluster-local.yaml`** (updated) - gains an `environment` label alongside
 `region`, per [0026](../../decisions/0026-region-environment-argo-derived.md):
@@ -135,7 +138,8 @@ version: 0.1.0
 
 ```yaml
 # templates/appproject.yaml
-{{- range .Values }}
+{{- $services := .Files.Get "services.yaml" | fromYamlArray }}
+{{- range $services }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -158,11 +162,16 @@ spec:
 {{- end }}
 ```
 
-`.Values` is the registry's own top-level list - `services.yaml` doubles as this chart's values
-file directly (see the wrapper Application below), nothing re-shapes it in between.
-`destinations.server: '*'` - cluster scoping is already enforced by the services `ApplicationSet`'s
-own `clusters` generator selector; the project only needs to fix *which namespace*, not which
-cluster.
+reads its own `services.yaml` via `.Files.Get` + `fromYamlArray`, not `.Values` - discovered live
+against a real ArgoCD sync (execution phase, not caught by `helm template` alone during planning):
+Helm's values loader requires a values file's root to be a map, but the services `ApplicationSet`'s
+git generator (below) requires the *same physical file* to be a top-level array to generate one
+param set per entry (R4) - passing it as `helm.valueFiles` fails outright
+(`cannot unmarshal array into Go value of type map[string]interface {}`). moving the registry
+inside the chart and reading it via `.Files.Get` keeps one source of truth in its required array
+shape for both consumers, without a second copy or a reshaping step. `destinations.server: '*'` -
+cluster scoping is already enforced by the services `ApplicationSet`'s own `clusters` generator
+selector; the project only needs to fix *which namespace*, not which cluster.
 
 **`local/argocd/application-projects.yaml`** (new) - the one Application that renders every
 `AppProject` from the registry, applied directly by `argocd-up` (same as `cluster-local.yaml`),
@@ -176,16 +185,10 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  sources:
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      path: local/argocd/appprojects
-      helm:
-        valueFiles:
-          - $values/local/argocd/services.yaml
-    - repoURL: https://github.com/iamnande/hyrule
-      targetRevision: prototype/0002-argocd-gitops
-      ref: values
+  source:
+    repoURL: https://github.com/iamnande/hyrule
+    targetRevision: prototype/0002-argocd-gitops
+    path: local/argocd/appprojects
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -194,7 +197,9 @@ spec:
 
 `project: default` - ArgoCD's built-in project, unchanged. this Application is platform bootstrap
 infra, the same tier as registering the cluster itself; it can't reasonably belong to a
-per-service project it's the thing generating.
+per-service project it's the thing generating. a single `source`, not the first draft's two - the
+chart no longer needs an externally injected values file (see `appprojects/` above), so there's
+nothing for a second `ref: values` source to supply.
 
 **`local/argocd/applicationset-services.yaml`** (new) - the one `ApplicationSet` for every
 service, `matrix` generator, replaces the first draft's per-service `appproject-pings.yaml` +
@@ -214,7 +219,7 @@ spec:
               repoURL: https://github.com/iamnande/hyrule
               revision: prototype/0002-argocd-gitops
               files:
-                - path: local/argocd/services.yaml
+                - path: local/argocd/appprojects/services.yaml
           - clusters:
               selector:
                 matchLabels:
@@ -589,7 +594,7 @@ feature branch, then a manual sync, re-renders the Helm source (base values + th
 PreSync hook still runs first (fresh Job, `migrate` is idempotent).
 
 **6. registering a second service:** add a `deploy/values/<service>/` (already how `make
-new-service` scaffolds today) plus one line to `local/argocd/services.yaml`. the next sync of
+new-service` scaffolds today) plus one line to `local/argocd/appprojects/services.yaml`. the next sync of
 `argocd-projects` generates its `AppProject`; the services `ApplicationSet` immediately generates
 its `Application` against every already-matched cluster (today: just the local one). no new
 ArgoCD YAML written by hand - the whole point of this revision.
@@ -621,7 +626,7 @@ for observing sync/health state only, per the PRD's Observability section.
 | file | change |
 |---|---|
 | `mk/argocd.mk` | new — `argocd-up`/`argocd-down`/`argocd-ui`, bootstrap order includes the projects Application + services `ApplicationSet` |
-| `local/argocd/services.yaml` | new — the services registry (service, team, domain) |
+| `local/argocd/appprojects/services.yaml` | new — the services registry (service, team, domain) |
 | `local/argocd/cluster-local.yaml` | new — labels the in-cluster destination `region`/`environment` |
 | `local/argocd/appprojects/Chart.yaml`, `local/argocd/appprojects/templates/appproject.yaml` | new — chart ranging over the registry, one `AppProject` per entry |
 | `local/argocd/application-projects.yaml` | new — the one Application applying the `appprojects` chart |
@@ -692,6 +697,7 @@ steps, in order:
 | where do postgres connection facts live, if not in a service's own values? | a single chart default, `deploy/helm/app/values.yaml`'s `postgres:` block - one file a platform engineer edits to repoint every opted-in service, same mechanism 0026 already uses for region/environment. a service supplies no DSN, ever; the migrate Job builds one internally from the chart default + the datastore entry's own `slug` |
 | are the postgres owner credentials in that chart default a real secret? | no, plaintext - same risk profile as today's already-committed `hyrule_owner`/`hyrule_owner`, just centralized to one file instead of duplicated per service. [0011](../../decisions/0011-secrets-generalized.md) is where real secret management gets solved, not this pass. TLS on the connection itself (including locally) is a related direction, not decided or built here - see `docs/roadmap.md` |
 | what if a service needs more than one `flavor: postgres` datastore? | not handled this pass - `migrate.yaml`'s Job/ConfigMap naming (`{{ app.fullname }}-migrate`/`-migrations`) doesn't weave in `slug`, so a second entry would collide. every real service today has exactly one; revisit by adding `slug` to both names if a second one actually shows up |
+| can `services.yaml` be fed to the `appprojects` chart as `helm.valueFiles`, as first drafted? | no - discovered live during execution, not caught by `helm template` alone. Helm's values loader requires a values file's root to be a map; the services `ApplicationSet`'s git generator requires the same physical file to be a top-level array to generate one param set per entry (R4). the two requirements are incompatible for one file passed via `-f`. fixed by moving `services.yaml` inside the `appprojects` chart directory and reading it via `.Files.Get "services.yaml" | fromYamlArray` instead - one source of truth, in the array shape the generator needs, with no external values injection required |
 
 ---
 
@@ -700,7 +706,7 @@ steps, in order:
 | requirement | covered by |
 |---|---|
 | R1 — ArgoCD installed via its own Helm chart, `make argocd-up`/`argocd-down` | § Interfaces (`mk/argocd.mk`), § Core (1, 7) |
-| R2 — `local/argocd/services.yaml` registry drives everything, no hand-written per-service ArgoCD YAML | § Interfaces (`services.yaml`), § Core (6), § Integration Tests (8) |
+| R2 — `local/argocd/appprojects/services.yaml` registry drives everything, no hand-written per-service ArgoCD YAML | § Interfaces (`services.yaml`), § Core (6), § Integration Tests (8) |
 | R3 — one `AppProject` per registered service, generated not hand-written | § Interfaces (`appprojects/`, `application-projects.yaml`), § Core (1, 2), § Integration Tests (2, 3) |
 | R4 — one `ApplicationSet`, `matrix` generator (registry × `clusters`), one Application per service × matched cluster | § Interfaces (`applicationset-services.yaml`), § Core (1), § Integration Tests (2, 8) |
 | R5 — region/environment injected from the matched cluster's labels, never committed to values | § Interfaces (`cluster-local.yaml`, `applicationset-services.yaml`'s `helm.parameters`), § Validation, § Integration Tests (6) |

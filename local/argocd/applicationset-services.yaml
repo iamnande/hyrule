@@ -11,7 +11,7 @@ spec:
               repoURL: https://github.com/iamnande/hyrule
               revision: prototype/0002-argocd-gitops
               files:
-                - path: local/argocd/services.yaml
+                - path: local/argocd/appprojects/services.yaml
           - clusters:
               selector:
                 matchLabels:

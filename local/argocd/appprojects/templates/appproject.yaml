@@ -1,4 +1,5 @@
-{{- range .Values }}
+{{- $services := .Files.Get "services.yaml" | fromYamlArray }}
+{{- range $services }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject

@@ -32,7 +32,7 @@ hook, the generator shape - without real VPS spend or homelab hardware.
 
 1. install ArgoCD via its own Helm chart into the local cluster, in its own `argocd` namespace,
    via new `mk/argocd.mk` (`argocd-up`/`argocd-down`). same pattern as `mk/cluster.mk`.
-2. add a services registry, `local/argocd/services.yaml` - one entry per service (`service`,
+2. add a services registry, `local/argocd/appprojects/services.yaml` - one entry per service (`service`,
    `team`, `domain`), the single source of truth for "what's live in ArgoCD, owned by whom."
    decoupled from `deploy/values/<service>/` existing: a service can be scaffolded without being
    registered - an explicit deploy gate, not implicit-by-directory (Tilt's own directory-listing
@@ -88,7 +88,7 @@ deliberate exception: the migrate Job template moves *into* `deploy/helm/app`
 service can opt into everywhere, not a prototype-only artifact, so it belongs where the rest of
 the chart lives, not under `local/`.
 
-`local/argocd/services.yaml` and Tilt's own service discovery (`ls deploy/values`, unchanged)
+`local/argocd/appprojects/services.yaml` and Tilt's own service discovery (`ls deploy/values`, unchanged)
 answer different questions on purpose - Tilt asks "what's scaffolded," the registry asks "what's
 live in ArgoCD, owned by whom." a service can exist in `deploy/values/` without a registry entry;
 Tilt still deploys it locally, ArgoCD just doesn't know about it yet.
@@ -121,7 +121,7 @@ Application can override, that a service's own committed values never sets).
 **before:** only Tilt's manual-trigger loop deploys locally, owning the `pings` namespace. no
 GitOps mechanism exists anywhere in the repo.
 
-**after:** Tilt's `pings` resource is stopped. `pings` has a `local/argocd/services.yaml` entry,
+**after:** Tilt's `pings` resource is stopped. `pings` has a `local/argocd/appprojects/services.yaml` entry,
 which generates its `AppProject` and, crossed with the local cluster's `region` label, its
 `Application`. pushing a values change to the prototype's feature branch and triggering a manual
 sync rolls the change into the same `pings` namespace Tilt used, now owned by ArgoCD instead. the
@@ -185,7 +185,7 @@ alerting is added to hyrule itself in this pass.
 
 **in scope:**
 - ArgoCD installed locally via its own Helm chart + new `mk/argocd.mk` targets
-- `local/argocd/services.yaml`, a services registry (service, team, domain) driving everything
+- `local/argocd/appprojects/services.yaml`, a services registry (service, team, domain) driving everything
   below - registering a service is a registry line, not new ArgoCD YAML
 - generated (not hand-written) per-service `AppProject`s from the registry
 - a single services `ApplicationSet`, `matrix` generator (registry × `clusters` generator on
@@ -267,7 +267,7 @@ alerting is added to hyrule itself in this pass.
 
 - **R1:** ArgoCD is installed into the local cluster via its own Helm chart, brought up via
   `make argocd-up` and torn down via `make argocd-down`.
-- **R2:** `local/argocd/services.yaml` exists as the single registry (service, team, domain) that
+- **R2:** `local/argocd/appprojects/services.yaml` exists as the single registry (service, team, domain) that
   drives everything below - onboarding a service is a registry line plus its existing
   `deploy/values/<service>/`, never new hand-written ArgoCD YAML.
 - **R3:** one `AppProject` per registered service is generated (never hand-written) from the
