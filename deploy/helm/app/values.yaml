@@ -45,9 +45,25 @@ resources:
   limits:
     memory: 128Mi
 
-env: {}
+env:
+  HYRULE_ENVIRONMENT: local
 extraEnv: []
 extraEnvFrom: []
+
+datastores: []
+
+postgres:
+  host: postgres-rw.databases.svc.cluster.local
+  port: 5432
+  ownerUser: hyrule_owner
+  ownerPassword: hyrule_owner
+  sslMode: disable
+
+migrate:
+  image:
+    repository: docker.io/migrate/migrate
+    tag: v4.19.1
+  backoffLimit: 0
 
 extraVolumes: []
 extraVolumeMounts: []

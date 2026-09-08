@@ -421,9 +421,9 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   listing them - see
   [0006-service-scaffold](decisions/0006-service-scaffold.md).
 - **the Tiltfile separates local-only scaffolding from the actual
-  deploy, by label** - `postgres` and `migrate` are `labels=['local-only']`:
-  dev-loop scaffolding a real cluster wouldn't have. every service is
-  `labels=['deploy']`.
+  deploy, by label** - `postgres` and each service's `<slug>-migrate` are
+  `labels=['local-only']`: dev-loop scaffolding a real cluster wouldn't
+  have. every service is `labels=['deploy']`.
 - **deploy is a real `helm install`/`upgrade`, not a render-and-apply** -
   `ext://helm_resource` (`tilt-dev`'s own extension) wraps actual Helm,
   not the built-in `helm()` function (which only runs `helm template`
@@ -446,19 +446,23 @@ platform + wrapper). `make cluster-up` / `cluster-down` / `cluster-status`
   only auto-groups workloads (Deployment/StatefulSet/...); anything else
   lands in an unlabeled "uncategorized" bucket unless claimed explicitly
   via `k8s_resource(..., objects=['name:kind'])`.
-- **`migrate` runs in-cluster too, as a real `batch/v1` `Job`** - the only
-  thing that still happens on the host is the image build. `migrations/`
-  gets read into a `hyrule-migrations` ConfigMap the same way
-  `local/postgres/init/` does (`configmap_from_dir`, one helper for both);
-  [local/cluster/migrate-job.yaml](../local/cluster/migrate-job.yaml) mounts
-  it and runs the official `migrate/migrate` image against
-  `postgres-rw`'s in-cluster DNS name, not a port-forwarded `localhost`. **`Job`s are immutable once created** - if postgres data
-  ever gets reset independently of Tilt (a pod delete outside Tilt's own
-  reconciliation, same trap as the postgres-init ConfigMap earlier),
-  Tilt won't notice the already-"Complete" `Job` is stale on its own.
-  `tilt trigger migrate` (or the button in Tilt's UI) deletes and
-  recreates it correctly - verified directly, this doesn't happen
-  automatically.
+- **`migrate` runs in-cluster too, as a real `batch/v1` `Job`, one per
+  opted-in service** - the only thing that still happens on the host is
+  the image build. each service declaring a `datastores` entry
+  (`flavor: postgres`) gets `migrations/<slug>/` read into a
+  `<slug>-migrations` ConfigMap the same way `local/postgres/init/` does
+  (`configmap_from_dir`, one helper for both); `app`'s own
+  [migrate.yaml](../deploy/helm/app/templates/migrate.yaml) template
+  (rendered via `helm template --show-only`, not a hand-maintained
+  duplicate) mounts it and runs the official `migrate/migrate` image
+  against `postgres-rw`'s in-cluster DNS name, not a port-forwarded
+  `localhost`, targeting the service's own logical database. **`Job`s are
+  immutable once created** - if postgres data ever gets reset
+  independently of Tilt (a pod delete outside Tilt's own reconciliation,
+  same trap as the postgres-init ConfigMap earlier), Tilt won't notice
+  the already-"Complete" `Job` is stale on its own. `tilt trigger
+  <slug>-migrate` (or the button in Tilt's UI) deletes and recreates it
+  correctly - verified directly, this doesn't happen automatically.
 - **every service takes config through env vars, full stop** - `app` has
   no mechanism for mounting a config file into a pod. `env` map keys are
   the literal env var names (no prefix magic; pings' own values file
