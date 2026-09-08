@@ -1,6 +1,3 @@
 - service: pings
   team: platform
   domain: core
-- service: widgets
-  team: platform
-  domain: core
