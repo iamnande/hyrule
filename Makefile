@@ -34,6 +34,7 @@ help: ## display this help screen
 			awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ; \
 	done
 
+include mk/argocd.mk
 include mk/bootstrap.mk
 include mk/build.mk
 include mk/cluster.mk
